@@ -1,0 +1,64 @@
+
+
+{% extends "report_base.html.j2" %}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% block report_styles %}
+    .hardware-panel-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 18px;
+    }
+
+        .external-report-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    .external-report-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-soft);
+        color: #1d4ed8;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .external-report-link:hover {
+        background: #dbeafe;
+        text-decoration: none;
+    }
+
+    .external-report-note {
+        margin: 8px 0 0;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+        .hardware-panel-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+{% endblock %}
+
+{% block title %}Hardware Report - Toolkit IT{% endblock %}
+
+{% block report_icon %}{% endblock %}
+
+{% block report_title %}Toolkit IT - Hardware Report{% endblock %}
+
+{% block content %}
+
+{% include "report_sections/hardware_content.html.j2" %}
+
+{% endblock %}

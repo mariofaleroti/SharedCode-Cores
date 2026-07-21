@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest reusable infrastructure that belongs in SharedCode.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Reusable problem
+      description: Explain which repeated infrastructure problem this solves across multiple tools.
+    validations:
+      required: true
+  - type: textarea
+    id: consumers
+    attributes:
+      label: Potential consumers
+      description: Name at least two kinds of tools that could reuse it.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behavior

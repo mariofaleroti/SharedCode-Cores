@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "name": "RenderEngine",
+    "version": "1.0.0",
+    "kind": "shared_render_engine",
+    "owner": "SharedCode",
+    "schema_version": "1.0",
+    "stable_baseline": true
+  },
+  "execution": {
+    "entry": "RenderEngine.exe",
+    "mode": "cli",
+    "default_arguments": [
+      "render"
+    ],
+    "supports_json_output": true
+  },
+  "capabilities": {
+    "input_contract": [
+      "meta",
+      "summary",
+      "report_brief",
+      "data",
+      "diagnostics",
+      "errors"
+    ],
+    "formats": [
+      "html",
+      "txt",
+      "csv",
+      "xlsx"
+    ],
+    "themes": [
+      "dark",
+      "light"
+    ],
+    "supports_legacy_contract": false,
+    "strict_contract_mode": true,
+    "json_contract_core_required": true,
+    "stable_formats": [
+      "html",
+      "txt",
+      "csv",
+      "xlsx"
+    ],
+    "completed_profiles": [
+      "disk_smart",
+      "document_highlight",
+      "document_highlight_pro"
+    ],
+    "profile_backlog": [
+      "event_health",
+      "storage_analyzer",
+      "category_database"
+    ]
+  }
+}

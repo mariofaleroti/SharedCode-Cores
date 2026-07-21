@@ -1,0 +1,49 @@
+{#  extras_report.html.j2
+
+    Envoltorio del reporte individual de extras del sistema.
+
+    Este archivo define la estructura propia del reporte:
+    - titulo de pagina
+    - titulo visible
+    - estilos especificos de extras
+    - inclusion del contenido interno
+
+    El contenido principal vive en: report_sections/extras_content.html.j2
+
+    Esto permite reutilizar el mismo contenido en otros reportes sin duplicar HTML.
+#}
+
+{% extends "report_base.html.j2" %}
+
+{% block report_page_title %}Reporte de Extras - Toolkit IT{% endblock %}
+
+{% block report_title %}
+    {{ meta.tool_name | default("Toolkit IT") }} - Reporte de Extras
+{% endblock %}
+
+{% block report_styles %}
+    .extras-panel-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .extras-wide-panel {
+        grid-column: 1 / -1;
+    }
+
+    @media (max-width: 900px) {
+        .extras-panel-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+{% endblock %}
+
+{#  Incluye el contenido interno del reporte de extras.
+
+    La estructura del documento queda en este archivo.
+    El cuerpo visual del reporte queda separado en report_sections.
+#}
+{% block content %}
+    {% include "report_sections/extras_content.html.j2" %}
+{% endblock %}

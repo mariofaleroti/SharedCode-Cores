@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{{ report_brief.title | default('Informe Event Health') }}</title>
+  <style>
+    :root {
+      --bg: #111827;
+      --panel: #1f2937;
+      --panel-soft: #273244;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #374151;
+      --ok: #22c55e;
+      --warning: #f59e0b;
+      --critical: #ef4444;
+      --error: #ef4444;
+      --info: #38bdf8;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    .header, .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .metric {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .metric .value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--info);
+      color: #07111f;
+    }
+
+    .badge.ok {
+      background: var(--ok);
+      color: #052e16;
+    }
+
+    .badge.warning {
+      background: var(--warning);
+      color: #451a03;
+    }
+
+    .badge.critical, .badge.error {
+      background: var(--critical);
+      color: #450a0a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    td {
+      color: var(--text);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .message {
+      max-width: 680px;
+      white-space: pre-wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 14px;
+      background: var(--panel-soft);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  {% set summary_data = summary | default({}) %}
+  {% set meta_data = meta | default({}) %}
+  {% set brief = report_brief | default({}) %}
+  {% set payload = data | default({}) %}
+  {% set events = payload.events | default([]) %}
+  {% set diagnostics_data = diagnostics | default([]) %}
+  {% set errors_data = errors | default([]) %}
+  {% set status = summary_data.status | default('unknown') %}
+
+  <section class="header">
+    <h1>{{ brief.title | default('Informe Event Health') }}</h1>
+    <p class="subtitle">{{ brief.description | default('Reporte de salud basado en eventos relevantes de Windows.') }}</p>
+    <p>
+      Estado:
+      <span class="badge {{ status }}">{{ status | upper }}</span>
+    </p>
+    <p class="muted">
+      Generado: {{ meta_data.generated_at | default('N/A') }}
+      · Equipo: {{ meta_data.computer_name | default('N/A') }}
+      · Usuario: {{ meta_data.user_name | default('N/A') }}
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Resumen</h2>
+    <div class="grid">
+      <div class="metric">
+        <div class="label">Días analizados</div>
+        <div class="value">{{ summary_data.days_analyzed | default('N/A') }}</div>
+      </div>
+      <div class="metric">
+        <div class="label">Eventos leídos</div>
+        <div class="value">{{ summary_data.raw_events_read | default(0) }}</div>
+      </div>
+      <div class="metric">
+        <div class="label">Eventos relevantes</div>
+        <div class="value">{{ summary_data.matched_events | default(0) }}</div>
+      </div>
+      <div class="metric">
+        <div class="label">Críticos</div>
+        <div class="value">{{ summary_data.critical_count | default(0) }}</div>
+      </div>
+      <div class="metric">
+        <div class="label">Advertencias</div>
+        <div class="value">{{ summary_data.warning_count | default(0) }}</div>
+      </div>
+      <div class="metric">
+        <div class="label">Diagnósticos</div>
+        <div class="value">{{ summary_data.diagnostics_count | default(0) }}</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Eventos por categoría</h2>
+    {% if summary_data.by_category %}
+      <table>
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category, count in summary_data.by_category.items() %}
+          <tr>
+            <td>{{ category }}</td>
+            <td>{{ count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">No hay eventos relevantes por categoría.</div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Diagnósticos</h2>
+    {% if diagnostics_data %}
+      <table>
+        <thead>
+          <tr>
+            <th>Severidad</th>
+            <th>Categoría</th>
+            <th>Mensaje</th>
+            <th>Detalles</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in diagnostics_data %}
+          {% set item_severity = item.severity | default('Info') %}
+          <tr>
+            <td><span class="badge {{ item_severity | lower }}">{{ item_severity }}</span></td>
+            <td>{{ item.category | default('N/A') }}</td>
+            <td>{{ item.message | default('N/A') }}</td>
+            <td class="muted">{{ item.details | default('N/A') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">No se generaron diagnósticos.</div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Eventos relevantes</h2>
+    {% if events %}
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Severidad</th>
+            <th>Proveedor</th>
+            <th>ID</th>
+            <th>Categoría</th>
+            <th>Motivo</th>
+            <th>Mensaje</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          {% set event_severity = event.severity | default('Info') %}
+          <tr>
+            <td>{{ event.time_created | default('N/A') }}</td>
+            <td><span class="badge {{ event_severity | lower }}">{{ event_severity }}</span></td>
+            <td>{{ event.provider_name | default('N/A') }}</td>
+            <td>{{ event.event_id | default('N/A') }}</td>
+            <td>{{ event.category | default('N/A') }}</td>
+            <td>{{ event.reason | default('N/A') }}</td>
+            <td class="message">{{ event.message | default('N/A') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty">No se detectaron eventos relevantes.</div>
+    {% endif %}
+  </section>
+
+  {% if errors_data %}
+  <section class="card">
+    <h2>Errores</h2>
+    <ul>
+      {% for error in errors_data %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</body>
+</html>

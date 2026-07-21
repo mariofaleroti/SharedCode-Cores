@@ -1,0 +1,20 @@
+{#
+    components/usage_bar.html.j2
+
+    Componente reutilizable para mostrar una barra de uso.
+
+    Variables esperadas:
+    - used_percent
+    - usage_class
+
+    Este archivo no decide el estado.
+    Solo dibuja la barra visual.
+#}
+
+<div class="usage-cell">
+    <div class="usage-track">
+        <div class="usage-fill {{ usage_class }}" style="width: {{ used_percent }}%;"></div>
+    </div>
+
+    <span>{{ used_percent }}%</span>
+</div>

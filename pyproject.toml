@@ -1,0 +1,121 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sharedcode-cores"
+dynamic = ["version"]
+description = "Reusable Python infrastructure cores for desktop and CLI tools."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Maritoo" }
+]
+keywords = [
+  "python",
+  "shared-library",
+  "desktop-tools",
+  "cli",
+  "customtkinter",
+  "file-scanning",
+  "json-contract",
+  "report-rendering"
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = []
+
+[project.optional-dependencies]
+gui = [
+  "customtkinter>=5.2.2,<6.0"
+]
+render = [
+  "Jinja2>=3.1.6,<4.0",
+  "openpyxl>=3.1.5,<4.0"
+]
+all = [
+  "customtkinter>=5.2.2,<6.0",
+  "Jinja2>=3.1.6,<4.0",
+  "openpyxl>=3.1.5,<4.0"
+]
+dev = [
+  "build>=1.2.2",
+  "pytest>=8.0"
+]
+
+[project.scripts]
+sharedcode-info = "sharedcode_meta.cli:main"
+json-contract = "json_contract_core.cli:main"
+render-engine = "render_core.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "sharedcode_meta.__version__" }
+
+[tool.setuptools.packages.find]
+where = [
+  "SharedCodeMeta",
+  "AppCore",
+  "CliCore",
+  "ConfigCore",
+  "DateTimeCore",
+  "FileScanCore",
+  "FileSystemInfoCore",
+  "GuiCore",
+  "JsonContractCore",
+  "LoggingCore",
+  "PlatformCore",
+  "ProcessRunnerCore",
+  "ReleaseCore",
+  "RenderCore",
+  "ToolRuntimeCore"
+]
+include = [
+  "sharedcode_meta*",
+  "app_core*",
+  "cli_core*",
+  "config_core*",
+  "date_time_core*",
+  "file_scan_core*",
+  "file_system_info_core*",
+  "gui_core*",
+  "json_contract_core*",
+  "logging_core*",
+  "platform_core*",
+  "process_runner_core*",
+  "release_core*",
+  "render_core*",
+  "tool_runtime_core*"
+]
+
+[tool.setuptools.package-data]
+render_core = ["templates/**/*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = [
+  "AppCore/tests",
+  "CliCore/tests",
+  "ConfigCore/tests",
+  "DateTimeCore/tests",
+  "FileScanCore/tests",
+  "FileSystemInfoCore/tests",
+  "GuiCore/tests",
+  "JsonContractCore/tests",
+  "LoggingCore/tests",
+  "PlatformCore/tests",
+  "ProcessRunnerCore/tests",
+  "ReleaseCore/tests",
+  "RenderCore/tests",
+  "ToolRuntimeCore/tests"
+]

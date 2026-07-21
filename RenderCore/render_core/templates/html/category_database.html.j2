@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="es" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ document.title }}</title>
+  <style>
+    :root {
+      --bg-0: #07111f;
+      --bg-1: #0b1220;
+      --bg-2: #111827;
+      --panel: rgba(17, 24, 39, .86);
+      --panel-solid: #111827;
+      --panel-soft: rgba(31, 41, 55, .78);
+      --surface: rgba(255,255,255,.055);
+      --surface-strong: rgba(255,255,255,.09);
+      --text: #e5e7eb;
+      --text-strong: #ffffff;
+      --muted: #9ca3af;
+      --muted-2: #64748b;
+      --border: rgba(148, 163, 184, .20);
+      --border-strong: rgba(148, 163, 184, .34);
+      --accent: #38bdf8;
+      --accent-2: #a78bfa;
+      --ok: #22c55e;
+      --warning: #f59e0b;
+      --critical: #ef4444;
+      --info: #38bdf8;
+      --shadow: rgba(0,0,0,.38);
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    html[data-theme="light"] {
+      --bg-0: #eef2ff;
+      --bg-1: #f8fafc;
+      --bg-2: #ffffff;
+      --panel: rgba(255, 255, 255, .88);
+      --panel-solid: #ffffff;
+      --panel-soft: rgba(248,250,252,.92);
+      --surface: rgba(15,23,42,.04);
+      --surface-strong: rgba(15,23,42,.07);
+      --text: #111827;
+      --text-strong: #020617;
+      --muted: #64748b;
+      --muted-2: #94a3b8;
+      --border: rgba(15, 23, 42, .10);
+      --border-strong: rgba(15, 23, 42, .18);
+      --shadow: rgba(15,23,42,.10);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 14% 0%, rgba(56,189,248,.24), transparent 28rem),
+        radial-gradient(circle at 86% 8%, rgba(167,139,250,.18), transparent 28rem),
+        linear-gradient(135deg, var(--bg-0), var(--bg-1) 42%, var(--bg-2));
+      color: var(--text);
+      font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.48;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148,163,184,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.85), transparent 78%);
+    }
+
+    .page {
+      width: min(1440px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+      position: relative;
+    }
+
+    .hero, .panel, .category-card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: 0 20px 60px var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero {
+      border-radius: var(--radius-lg);
+      padding: 26px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -120px -180px auto;
+      width: 360px;
+      height: 360px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(56,189,248,.18), transparent 65%);
+      pointer-events: none;
+    }
+
+    .hero-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 { margin: 0; color: var(--text-strong); }
+    h1 { font-size: clamp(30px, 4.2vw, 52px); letter-spacing: -.055em; line-height: 1; }
+    h2 { font-size: 19px; letter-spacing: -.02em; }
+    h3 { font-size: 16px; letter-spacing: -.015em; }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 860px;
+      margin: 12px 0 0;
+      font-size: 15px;
+    }
+
+    .status-pill, .pill, .chip, .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .status-pill {
+      padding: 9px 14px;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      border: 1px solid rgba(56,189,248,.38);
+      background: rgba(56,189,248,.13);
+      color: var(--info);
+    }
+
+    .status-pill.ok { border-color: rgba(34,197,94,.40); background: rgba(34,197,94,.14); color: var(--ok); }
+    .status-pill.warning { border-color: rgba(245,158,11,.42); background: rgba(245,158,11,.14); color: var(--warning); }
+    .status-pill.critical { border-color: rgba(239,68,68,.44); background: rgba(239,68,68,.14); color: var(--critical); }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 22px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chip {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .metric {
+      min-height: 104px;
+      padding: 15px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface-strong), var(--surface));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: .9;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 8px;
+      color: var(--text-strong);
+      font-size: clamp(20px, 2.4vw, 30px);
+      font-weight: 900;
+      letter-spacing: -.04em;
+      word-break: break-word;
+    }
+
+    .metric-note { margin-top: 5px; color: var(--muted-2); font-size: 12px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .panel-subtitle { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
+
+    .search-box {
+      width: 100%;
+      margin-top: 12px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 13px;
+      padding: 12px 13px;
+      outline: none;
+      font: inherit;
+    }
+
+    .search-box:focus {
+      border-color: rgba(56,189,248,.72);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.10);
+    }
+
+    .nav-list { display: grid; gap: 8px; margin-top: 12px; }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 750;
+    }
+    .nav-link:hover { border-color: rgba(56,189,248,.44); background: var(--surface-strong); }
+    .nav-link span:last-child { color: var(--muted); font-size: 12px; font-weight: 800; }
+
+    .callout {
+      border: 1px solid rgba(56,189,248,.26);
+      background: linear-gradient(135deg, rgba(56,189,248,.10), rgba(167,139,250,.08));
+      border-radius: 15px;
+      padding: 13px;
+      color: var(--muted);
+    }
+
+    .content-stack { display: grid; gap: 18px; }
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 14px;
+    }
+
+    .category-card {
+      border-radius: var(--radius-md);
+      padding: 17px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.22);
+    }
+
+    .category-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .category-icon {
+      width: 34px;
+      height: 34px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(56,189,248,.20), rgba(167,139,250,.16));
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .category-name { word-break: break-word; }
+    .category-description { color: var(--muted); margin: 3px 0 0; font-size: 13px; }
+
+    .pill {
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .045em;
+    }
+    .pill.enabled { color: var(--ok); border-color: rgba(34,197,94,.34); background: rgba(34,197,94,.10); }
+    .pill.disabled { color: var(--critical); border-color: rgba(239,68,68,.34); background: rgba(239,68,68,.10); }
+    .pill.mode { color: var(--accent); border-color: rgba(56,189,248,.30); background: rgba(56,189,248,.08); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      padding: 5px 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 650;
+      max-width: 100%;
+    }
+    .tag.exclude { color: var(--critical); border-color: rgba(239,68,68,.30); background: rgba(239,68,68,.08); }
+    .tag.field { color: var(--muted); }
+    .tag.more { color: var(--accent); }
+
+    .card-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .mini-stat {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 9px;
+    }
+    .mini-stat strong { display: block; color: var(--text-strong); font-size: 16px; }
+    .mini-stat span { color: var(--muted); font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+
+    details.clean {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 13px;
+      padding: 10px 12px;
+    }
+    details.clean summary { cursor: pointer; font-weight: 850; color: var(--text); }
+
+    .brief-list { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+    .brief-list li + li { margin-top: 6px; }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--surface);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 880px; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; text-align: left; }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--panel-solid);
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    td { color: var(--text); }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: var(--surface); }
+
+    .empty {
+      border: 1px dashed var(--border-strong);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .json-block {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(2,6,23,.35);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      overflow: auto;
+      max-height: 460px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 20px;
+      padding: 0 4px;
+    }
+
+    .hidden-by-filter { display: none !important; }
+
+    @media (max-width: 1120px) {
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+    }
+
+    @media (max-width: 700px) {
+      .page { width: min(100% - 20px, 1440px); padding-top: 12px; }
+      .hero-top { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .category-grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body { background: #fff; color: #111827; }
+      body::before, .sidebar, .search-box { display: none; }
+      .page { width: 100%; padding: 0; }
+      .hero, .panel, .category-card { box-shadow: none; backdrop-filter: none; break-inside: avoid; }
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  {% set status_key = document.status | status_class %}
+  {% set categories = data.get('categories', {}) %}
+  {% set recommendations = report_brief.get('recommendations', []) %}
+  {% set findings = report_brief.get('findings', []) %}
+  {% set notes = report_brief.get('technician_notes', []) %}
+  <main class="page">
+    <header class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">RenderCore · Category Database</div>
+          <h1>{{ document.title }}</h1>
+          <p class="subtitle">{{ document.subtitle }}</p>
+        </div>
+        <span class="status-pill {{ status_key }}">{{ document.status }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="chip">Tipo: {{ document.report_type }}</span>
+        {% if meta.file_type %}<span class="chip">Archivo: {{ meta.file_type }}</span>{% endif %}
+        {% if meta.config_type %}<span class="chip">Config: {{ meta.config_type }}</span>{% endif %}
+        {% if meta.tool_name %}<span class="chip">Herramienta: {{ meta.tool_name }}</span>{% endif %}
+        {% if meta.module_name %}<span class="chip">Módulo: {{ meta.module_name }}</span>{% endif %}
+        {% if meta.schema_version %}<span class="chip">Schema: {{ meta.schema_version }}</span>{% endif %}
+        {% if meta.updated_at %}<span class="chip">Actualizado: {{ meta.updated_at }}</span>{% endif %}
+        {% if meta.created_at %}<span class="chip">Creado: {{ meta.created_at }}</span>{% endif %}
+      </div>
+    </header>
+
+    <section class="metrics" aria-label="Resumen principal">
+      <article class="metric"><div class="metric-label">Categorías</div><div class="metric-value">{{ summary.get('total_categories', categories|length) }}</div><div class="metric-note">Total configurado</div></article>
+      <article class="metric"><div class="metric-label">Términos</div><div class="metric-value">{{ summary.get('total_terms', 0) }}</div><div class="metric-note">Búsqueda inteligente</div></article>
+      <article class="metric"><div class="metric-label">Exclusiones</div><div class="metric-value">{{ summary.get('total_exclude_terms', 0) }}</div><div class="metric-note">Ruido filtrado</div></article>
+      <article class="metric"><div class="metric-label">Activas</div><div class="metric-value">{{ summary.get('enabled_categories', 0) }}</div><div class="metric-note">Disponibles para usar</div></article>
+      <article class="metric"><div class="metric-label">Inactivas</div><div class="metric-value">{{ summary.get('disabled_categories', 0) }}</div><div class="metric-note">No participan</div></article>
+      <article class="metric"><div class="metric-label">Errores</div><div class="metric-value">{{ summary.get('errors_count', errors|length) }}</div><div class="metric-note">Validación / carga</div></article>
+    </section>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <div class="panel-title"><h2>Explorar</h2></div>
+          <p class="panel-subtitle">Filtrá categorías por nombre, descripción, modo o términos.</p>
+          <input id="categorySearch" class="search-box" type="search" placeholder="Buscar categoría o término..." autocomplete="off">
+          <nav class="nav-list" id="categoryNav">
+            {% for key, category in categories.items() %}
+              <a class="nav-link" href="#cat-{{ key|replace('_','-') }}" data-search="{{ key }} {{ category.get('title','') }} {{ category.get('description','') }} {{ category.get('terms', [])|join(' ') }}">
+                <span>{{ category.get('title', key) }}</span>
+                <span>{{ category.get('terms', [])|length }}</span>
+              </a>
+            {% endfor %}
+          </nav>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Notas del reporte</h2></div>
+          {% if recommendations %}
+            <div class="callout"><strong>Recomendaciones</strong><ul class="brief-list">{% for item in recommendations %}<li>{{ item }}</li>{% endfor %}</ul></div>
+          {% else %}
+            <div class="empty">Sin recomendaciones registradas.</div>
+          {% endif %}
+          {% if findings %}
+            <div style="height:10px"></div>
+            <div class="callout"><strong>Hallazgos</strong><ul class="brief-list">{% for item in findings %}<li>{{ item }}</li>{% endfor %}</ul></div>
+          {% endif %}
+          {% if notes %}
+            <div style="height:10px"></div>
+            <div class="callout"><strong>Notas técnicas</strong><ul class="brief-list">{% for item in notes %}<li>{{ item }}</li>{% endfor %}</ul></div>
+          {% endif %}
+        </section>
+      </aside>
+
+      <section class="content-stack">
+        <section class="panel">
+          <div class="panel-title">
+            <div>
+              <h2>Categorías inteligentes</h2>
+              <p class="panel-subtitle">Vista preparada para revisar cobertura, términos, campos objetivo y exclusiones.</p>
+            </div>
+            <span class="chip" id="visibleCount">{{ categories|length }} visibles</span>
+          </div>
+
+          {% if categories %}
+            <div class="category-grid" id="categoryGrid">
+              {% for key, category in categories.items() %}
+                {% set terms = category.get('terms', []) %}
+                {% set exclude_terms = category.get('exclude_terms', []) %}
+                {% set target_fields = category.get('target_fields', []) %}
+                {% set discard_categories = category.get('discard_categories', []) %}
+                {% set search_blob = key ~ ' ' ~ category.get('title','') ~ ' ' ~ category.get('description','') ~ ' ' ~ category.get('search_mode','') ~ ' ' ~ terms|join(' ') ~ ' ' ~ target_fields|join(' ') %}
+                <article class="category-card" id="cat-{{ key|replace('_','-') }}" data-category-card data-search="{{ search_blob|lower }}">
+                  <div class="category-head">
+                    <div class="category-title">
+                      <span class="category-icon">{{ loop.index }}</span>
+                      <div>
+                        <h3 class="category-name">{{ category.get('title', key) }}</h3>
+                        <p class="category-description">{{ category.get('description', 'Sin descripción.') }}</p>
+                      </div>
+                    </div>
+                    <span class="pill {{ 'enabled' if category.get('enabled') else 'disabled' }}">{{ 'Activa' if category.get('enabled') else 'Inactiva' }}</span>
+                  </div>
+
+                  <div class="card-stats">
+                    <div class="mini-stat"><strong>{{ terms|length }}</strong><span>Términos</span></div>
+                    <div class="mini-stat"><strong>{{ exclude_terms|length }}</strong><span>Excluir</span></div>
+                    <div class="mini-stat"><strong>{{ target_fields|length }}</strong><span>Campos</span></div>
+                  </div>
+
+                  <div class="tag-row">
+                    <span class="pill mode">{{ category.get('search_mode', 'Sin modo') }}</span>
+                  </div>
+
+                  <div>
+                    <h3 style="margin-bottom:8px;">Términos principales</h3>
+                    <div class="tag-row">
+                      {% for term in terms[:12] %}<span class="tag">{{ term }}</span>{% endfor %}
+                      {% if terms|length > 12 %}<span class="tag more">+{{ terms|length - 12 }} más</span>{% endif %}
+                    </div>
+                  </div>
+
+                  {% if exclude_terms %}
+                    <div>
+                      <h3 style="margin-bottom:8px;">Exclusiones</h3>
+                      <div class="tag-row">{% for term in exclude_terms %}<span class="tag exclude">{{ term }}</span>{% endfor %}</div>
+                    </div>
+                  {% endif %}
+
+                  <details class="clean">
+                    <summary>Campos objetivo y reglas</summary>
+                    <div style="height:10px"></div>
+                    {% if target_fields %}
+                      <div class="tag-row">{% for field in target_fields %}<span class="tag field">{{ field }}</span>{% endfor %}</div>
+                    {% else %}
+                      <div class="empty">Sin campos objetivo definidos.</div>
+                    {% endif %}
+                    {% if discard_categories %}
+                      <div style="height:10px"></div>
+                      <strong>Descartar categorías</strong>
+                      <div class="tag-row" style="margin-top:8px;">{% for item in discard_categories %}<span class="tag exclude">{{ item }}</span>{% endfor %}</div>
+                    {% endif %}
+                  </details>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty">No hay categorías dentro de data.categories.</div>
+          {% endif %}
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Tabla completa</h2><span class="chip">{{ categories|length }} filas</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>#</th><th>Categoría</th><th>Estado</th><th>Modo</th><th>Términos</th><th>Exclusiones</th><th>Campos objetivo</th><th>Descripción</th></tr>
+              </thead>
+              <tbody>
+                {% for key, category in categories.items() %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ category.get('title', key) }}</strong><br><span style="color:var(--muted);">{{ key }}</span></td>
+                    <td><span class="pill {{ 'enabled' if category.get('enabled') else 'disabled' }}">{{ 'Activa' if category.get('enabled') else 'Inactiva' }}</span></td>
+                    <td>{{ category.get('search_mode', '') }}</td>
+                    <td>{{ category.get('terms', [])|join(', ') }}</td>
+                    <td>{{ category.get('exclude_terms', [])|join(', ') }}</td>
+                    <td>{{ category.get('target_fields', [])|join(', ') }}</td>
+                    <td>{{ category.get('description', '') }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Diagnósticos y errores</h2></div>
+          {% if diagnostics or errors %}
+            {% if diagnostics %}<h3>Diagnósticos</h3><div class="json-block">{{ diagnostics|tojson(indent=2) }}</div>{% endif %}
+            {% if errors %}<h3 style="margin-top:12px;">Errores</h3><div class="json-block">{{ errors|tojson(indent=2) }}</div>{% endif %}
+          {% else %}
+            <div class="empty">Sin diagnósticos ni errores registrados.</div>
+          {% endif %}
+        </section>
+
+        <section class="panel">
+          <details class="clean">
+            <summary>Ver JSON crudo de data</summary>
+            <div class="json-block" style="margin-top:12px;">{{ data|tojson(indent=2) }}</div>
+          </details>
+        </section>
+      </section>
+    </div>
+
+    <footer class="footer">
+      <span>RenderCore · motor compartido neutral para contratos JSON</span>
+      <span>{{ meta.tool_name|default('SharedCode') }}{% if meta.updated_at %} · {{ meta.updated_at }}{% endif %}</span>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const input = document.getElementById('categorySearch');
+      const cards = Array.from(document.querySelectorAll('[data-category-card]'));
+      const links = Array.from(document.querySelectorAll('#categoryNav .nav-link'));
+      const visibleCount = document.getElementById('visibleCount');
+      if (!input) return;
+      function normalize(value) {
+        return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      }
+      function applyFilter() {
+        const query = normalize(input.value.trim());
+        let count = 0;
+        cards.forEach(card => {
+          const match = !query || normalize(card.dataset.search).includes(query);
+          card.classList.toggle('hidden-by-filter', !match);
+          if (match) count += 1;
+        });
+        links.forEach(link => {
+          const match = !query || normalize(link.dataset.search).includes(query);
+          link.classList.toggle('hidden-by-filter', !match);
+        });
+        if (visibleCount) visibleCount.textContent = count + ' visibles';
+      }
+      input.addEventListener('input', applyFilter);
+    })();
+  </script>
+</body>
+</html>

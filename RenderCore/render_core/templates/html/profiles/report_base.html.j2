@@ -1,0 +1,787 @@
+{#
+    report_base.html.j2
+
+    Plantilla base para informes de Toolkit Render.
+
+    Este archivo extiende base.html.j2 y solo posee una estructura a nivel de informe:
+    - informar CSS
+    - encabezado del informe
+    - informar espacio de contenido
+    - pie de página del informe
+
+    No debe contener etiquetas de documentos HTML completas.
+#}
+
+{% extends "base.html.j2" %}
+
+{# Título de la pestaña del navegador para informes. #}
+{% block title %}
+    {% block report_page_title %}Toolkit IT Report{% endblock %}
+{% endblock %}
+
+{#
+    CSS de informe común.
+
+    Este bloque se inserta dentro de la etiqueta <style> definida por base.html.j2.
+    Normas:
+    - Sólo CSS
+    - sin etiqueta <estilo>
+    - sin HTML
+#}
+{% block styles %}
+
+    /* Report header. */
+    .report-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: #111827;
+        color: #ffffff;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 12px;
+    }
+
+    .report-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .report-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .report-meta-line {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+        color: #d1d5db;
+        font-size: 12px;
+    }
+
+    /* Status badges used by summaries, diagnostics and tables. */
+    .status-badge {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .status-healthy,
+    .status-ok {
+        background: var(--ok-bg);
+        color: var(--ok-text);
+    }
+
+    .status-warning {
+        background: var(--warning-bg);
+        color: var(--warning-text);
+    }
+
+    .status-critical,
+    .status-error {
+        background: var(--critical-bg);
+        color: var(--critical-text);
+    }
+
+    .status-info,
+    .status-unknown {
+        background: var(--info-bg);
+        color: var(--info-text);
+    }
+
+    .diagnostic-ok-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.diagnostic-ok-title {
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.diagnostic-ok-detail {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+    /* Top report area. */
+   /*
+    Bloque superior fijo del reporte.
+
+    Mantiene resumen y diagnosticos visibles mientras se baja
+    por el resto del informe.
+*/
+.overview-grid {
+    position: sticky;
+    top: 10px;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: stretch;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/*
+    Altura controlada para los paneles superiores.
+
+    Evita que diagnosticos crezca demasiado cuando hay muchas filas.
+*/
+.overview-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 10px 12px;
+    height: 145px;
+    min-height: 145px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 18px rgba(17, 24, 39, 0.08);
+}
+
+body.is-report-scrolled .overview-grid {
+    transform: scale(0.98);
+    opacity: 1.5;
+}
+
+/*
+    Permite que tablas dentro del panel superior usen scroll interno.
+
+    Esto afecta especialmente Diagnostics.
+*/
+.overview-panel .table-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+/*
+    Reduce el aire interno del resumen cuando el panel superior
+    tiene altura fija.
+*/
+.overview-panel .summary-card-grid {
+    margin-bottom: 14px;
+}
+
+/*
+    Mantiene la metadata del resumen al fondo del panel.
+*/
+.overview-panel .summary-meta-line {
+    margin-top: auto;
+}
+
+
+    .overview-panel .summary-meta-line {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+        padding-top: 30px;
+        border-top: 1px solid var(--border-light);
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    /* Summary cards. */
+    .summary-card-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .summary-card {
+    display: grid;
+    justify-items: center;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 7px 6px;
+    min-height: 58px;
+}
+
+    .summary-card .icon {
+    width: 17px;
+    height: 17px;
+    color: #4b5563;
+}
+
+    .summary-card.warning .icon {
+        color: #d97706;
+    }
+
+    .summary-card.critical .icon {
+        color: #dc2626;
+    }
+
+    .summary-label {
+    color: #4b5563;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+   .summary-value {
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
+}
+
+    /* Generic report sections. */
+    .section {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+    }
+
+
+    /*
+    Secciones colapsables.
+
+    Permiten ocultar contenido grande sin usar JavaScript.
+*/
+.collapsible-section {
+    padding: 0;
+    overflow: hidden;
+}
+
+.collapsible-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    margin: 0;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 750;
+    list-style: none;
+}
+
+.collapsible-title::-webkit-details-marker {
+    display: none;
+}
+
+/*
+    Indicador visual de seccion colapsable.
+
+    Usa un chevron simple hecho con bordes.
+    Cerrado apunta hacia abajo.
+    Abierto apunta hacia arriba.
+*/
+.collapsible-title::after {
+    content: "";
+    margin-left: auto;
+    margin-right: 6px;
+    width: 11px;
+    height: 11px;
+    border-right: 4px solid var(--text-main);
+    border-bottom: 4px solid var(--text-main);
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.collapsible-section[open] > .collapsible-title::after {
+    transform: translateY(2px) rotate(-135deg);
+}
+
+.collapsible-body {
+    padding: 0 14px 14px;
+}
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 10px;
+        font-size: 18px;
+        font-weight: 750;
+    }
+
+    /* Technical key-value grid. */
+    .technical-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 22px;
+    }
+
+    .technical-row {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 12px;
+        border-bottom: 1px solid var(--border-light);
+        padding: 6px 0;
+    }
+
+    .technical-row:last-child {
+        border-bottom: none;
+    }
+
+    .technical-label {
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 650;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .technical-value {
+        font-weight: 650;
+        overflow-wrap: anywhere;
+    }
+
+    /* Detail panels. */
+    .detail-panel-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .detail-panel {
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .detail-panel-title {
+        margin: 0;
+        padding: 10px 12px;
+        background: var(--bg-soft);
+        border-bottom: 1px solid var(--border-light);
+        font-size: 16px;
+        font-weight: 750;
+    }
+
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .detail-table th,
+    .detail-table td {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .detail-table tbody tr:nth-child(odd) th,
+    .detail-table tbody tr:nth-child(odd) td {
+        background: #fcfcfd;
+    }
+
+    .detail-table tbody tr:nth-child(even) th,
+    .detail-table tbody tr:nth-child(even) td {
+        background: #f3f4f6;
+    }
+
+    .detail-table tbody tr:hover th,
+    .detail-table tbody tr:hover td {
+        background: #eaf2ff;
+    }
+
+    .detail-table th {
+        width: 180px;
+        color: #475569;
+        font-weight: 700;
+        text-align: left;
+        background: #ffffff;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .detail-table td {
+        font-weight: 600;
+    }
+
+    /* Generic tables. */
+    .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff;
+    }
+
+    th,
+    td {
+        padding: 8px 9px;
+        border-bottom: 1px solid var(--border-light);
+        text-align: left;
+        font-size: 13px;
+        vertical-align: top;
+    }
+
+    th {
+        background: var(--bg-soft);
+        color: #374151;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    tbody tr:nth-child(odd) {
+        background: #fcfcfd;
+    }
+
+    tbody tr:nth-child(even) {
+        background: #f3f4f6;
+    }
+
+    tbody tr:hover {
+        background: #eaf2ff;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Diagnostic links and target focus. */
+    .diagnostic-message a {
+        color: #1d4ed8;
+        text-decoration: none;
+        font-weight: 800;
+    }
+
+    .diagnostic-message a:hover {
+        text-decoration: underline;
+    }
+
+    .section:target,
+    .detail-panel:target,
+    tr:target {
+        outline: 2px solid #2563eb;
+        outline-offset: -2px;
+    }
+
+    tr:target td {
+        background: #dbeafe !important;
+    }
+
+    /* Persistent row states. */
+    .row-status-warning td {
+        background: #fff7ed !important;
+    }
+
+    .row-status-critical td {
+        background: #fef2f2 !important;
+    }
+
+    .row-status-warning {
+        border-left: 4px solid #f59e0b;
+    }
+
+    .row-status-critical {
+        border-left: 4px solid #dc2626;
+    }
+
+    /* Persistent panel states. */
+    .detail-panel.panel-status-warning {
+        border-left: 4px solid #f59e0b;
+        background: #fff7ed;
+    }
+
+    .detail-panel.panel-status-critical {
+        border-left: 4px solid #dc2626;
+        background: #fef2f2;
+    }
+
+    .detail-panel.panel-status-warning .detail-panel-title {
+        background: #fff7ed !important;
+    }
+
+    .detail-panel.panel-status-critical .detail-panel-title {
+        background: #fef2f2 !important;
+    }
+
+    .detail-panel.panel-status-warning .detail-table th,
+    .detail-panel.panel-status-warning .detail-table td {
+        background: #fff7ed !important;
+    }
+
+    .detail-panel.panel-status-critical .detail-table th,
+    .detail-panel.panel-status-critical .detail-table td {
+        background: #fef2f2 !important;
+    }
+
+    .detail-panel.panel-status-warning .status-focus-row th,
+    .detail-panel.panel-status-warning .status-focus-row td {
+        background: #ffedd5 !important;
+    }
+
+    .detail-panel.panel-status-critical .status-focus-row th,
+    .detail-panel.panel-status-critical .status-focus-row td {
+        background: #fee2e2 !important;
+    }
+
+    /* Diagnostics table. */
+    .diagnostics-table th,
+    .diagnostics-table td {
+        padding: 7px 8px;
+        font-size: 12px;
+    }
+
+    .diagnostics-table .status-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    .diagnostic-message {
+        font-weight: 700;
+    }
+
+    .diagnostic-details {
+        color: var(--text-muted);
+    }
+
+    /* Usage bar. */
+  .usage-column {
+    width: 280px;
+    min-width: 280px;
+}
+
+.usage-cell {
+    display: grid;
+    grid-template-columns: 210px 48px;
+    align-items: center;
+    gap: 8px;
+    width: 266px;
+}
+
+.usage-track {
+    height: 8px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.text-center {
+    text-align: center;
+}
+
+    .usage-fill {
+        height: 100%;
+        border-radius: 999px;
+    }
+
+    .usage-ok {
+        background: #22c55e;
+    }
+
+    .usage-medium {
+        background: #f59e0b;
+    }
+
+    .usage-warning {
+        background: #ef4444;
+    }
+
+    /* Inline status text. */
+    .status-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+    }
+
+    .status-inline.ok {
+        color: #16a34a;
+    }
+
+    .status-inline.warning {
+        color: #d97706;
+    }
+
+    /* Empty state. */
+    .empty-message {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    /* Report footer. */
+    .footer {
+        margin-top: 16px;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-align: center;
+    }
+
+    @media (max-width: 900px) {
+        .report-bar {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .report-meta-line {
+            justify-content: flex-start;
+        }
+
+        .overview-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .summary-card-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .technical-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .detail-panel-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .technical-row {
+            grid-template-columns: 1fr;
+            gap: 3px;
+        }
+    }
+
+<!--   Para mostrar flecha arriba abajo colapso -->
+.tk-collapsible {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--panel-bg);
+    overflow: hidden;
+}
+
+.tk-collapsible-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+}
+
+.tk-collapsible-title::-webkit-details-marker {
+    display: none;
+}
+
+.tk-collapsible-title::after {
+    content: "";
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-right: 4px solid currentColor;
+    border-bottom: 4px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.tk-collapsible[open] > .tk-collapsible-title::after {
+    transform: translateY(2px) rotate(-135deg);
+}
+
+.tk-collapsible-count {
+    margin-left: auto;
+    margin-right: 14px;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+    {# CSS adicional para informes específicos, como hardware_report.html.j2. #}
+    {% block report_styles %}{% endblock %}
+
+{% endblock %}
+
+{# Cuerpo del informe insertado dentro del elemento principal de base.html.j2. #}
+{% block page_content %}
+
+    <header class="report-bar">
+        <div class="report-title-wrap">
+            {% block report_icon %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                    <path d="M9 9h6v6H9z"></path>
+                    <path d="M9 1v3"></path>
+                    <path d="M15 1v3"></path>
+                    <path d="M9 20v3"></path>
+                    <path d="M15 20v3"></path>
+                    <path d="M20 9h3"></path>
+                    <path d="M20 15h3"></path>
+                    <path d="M1 9h3"></path>
+                    <path d="M1 15h3"></path>
+                </svg>
+            {% endblock %}
+
+            <h1 class="report-title">
+                {% block report_title %}
+                    {{ meta.tool_name | default("Toolkit IT") }} - {{ meta.report_type | default("Report") }}
+                {% endblock %}
+            </h1>
+        </div>
+
+        <div class="report-meta-line">
+            <span>Equipo: {{ meta.computer_name | default("N/A") }}</span>
+            <span>Usuario: {{ meta.user_name | default("N/A") }}</span>
+            <span>Generado: {{ meta.generated_at | default("N/A") }}</span>
+        </div>
+    </header>
+
+    {# El contenido específico del informe va aquí. #}
+    {% block content %}{% endblock %}
+
+    <footer class="footer">
+        {{ meta.tool_name | default("Toolkit IT") }}
+        |
+        Modulo: {{ meta.module_name | default("N/A") }}
+        |
+        Version esquema: {{ meta.schema_version | default("N/A") }}
+    </footer>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        (function () {
+            function updateReportScrollState() {
+                if (window.scrollY > 80) {
+                    document.body.classList.add("is-report-scrolled");
+                    return;
+                }
+
+                document.body.classList.remove("is-report-scrolled");
+            }
+
+            window.addEventListener("scroll", updateReportScrollState, { passive: true });
+            updateReportScrollState();
+        })();
+    </script>
+{% endblock %}

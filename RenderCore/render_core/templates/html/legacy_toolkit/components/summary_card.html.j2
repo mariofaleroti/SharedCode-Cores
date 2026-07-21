@@ -1,0 +1,27 @@
+{#
+    components/summary_card.html.j2
+
+    Componente reutilizable para una tarjeta del resumen.
+
+    Variables recibidas por la macro:
+    - label
+    - value
+    - card_class
+
+    El icono se recibe con caller().
+    Esto permite que cada tarjeta tenga su propio SVG.
+#}
+
+{% macro render_summary_card(label, value, card_class="") %}
+
+    <div class="summary-card {{ card_class }}">
+        {{ caller() }}
+
+        <span class="summary-label">{{ label }}</span>
+
+        <span class="summary-value">
+            {{ value }}
+        </span>
+    </div>
+
+{% endmacro %}

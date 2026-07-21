@@ -1,0 +1,17 @@
+"""Shared constants for PlatformCore."""
+
+from __future__ import annotations
+
+PLATFORM_WINDOWS = "windows"
+PLATFORM_LINUX = "linux"
+PLATFORM_UNSUPPORTED = "unsupported"
+
+SUPPORTED_PLATFORMS = (PLATFORM_WINDOWS, PLATFORM_LINUX)
+
+WINDOWS_HIDDEN_ATTRIBUTE = 0x02
+WINDOWS_REPARSE_POINT_ATTRIBUTE = 0x400
+
+DEFAULT_XDG_CONFIG_HOME = ".config"
+DEFAULT_XDG_DATA_HOME = ".local/share"
+DEFAULT_XDG_STATE_HOME = ".local/state"
+DEFAULT_XDG_CACHE_HOME = ".cache"

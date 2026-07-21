@@ -1,0 +1,42 @@
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*.pyd
+.venv/
+venv/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Tests and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Runtime and generated files
+output/
+runtime/
+logs/
+temp/
+tmp/
+*.log
+*.tmp
+*.bak
+
+# IDE and operating system
+.vscode/
+.idea/
+.vs/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Secrets
+.env
+.env.*
+*.secrets
+clave.b64

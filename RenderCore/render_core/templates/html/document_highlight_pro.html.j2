@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="es" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ document.title }}</title>
+  <style>
+    :root {
+      --bg-0: #06101f;
+      --bg-1: #0b1220;
+      --bg-2: #101827;
+      --panel: rgba(15,23,42,.88);
+      --panel-solid: #111827;
+      --panel-soft: rgba(30,41,59,.76);
+      --surface: rgba(255,255,255,.055);
+      --surface-strong: rgba(255,255,255,.09);
+      --surface-active: rgba(56,189,248,.13);
+      --text: #e5e7eb;
+      --text-strong: #ffffff;
+      --muted: #9ca3af;
+      --muted-2: #64748b;
+      --border: rgba(148,163,184,.20);
+      --border-strong: rgba(148,163,184,.34);
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --violet: #a78bfa;
+      --ok: #22c55e;
+      --warning: #f59e0b;
+      --critical: #ef4444;
+      --mark: #facc15;
+      --mark-text: #201800;
+      --mark-current: #fb923c;
+      --shadow: rgba(0,0,0,.38);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    html[data-theme="light"] {
+      --bg-0: #eaf4ff;
+      --bg-1: #f8fafc;
+      --bg-2: #ffffff;
+      --panel: rgba(255,255,255,.92);
+      --panel-solid: #ffffff;
+      --panel-soft: rgba(248,250,252,.94);
+      --surface: rgba(15,23,42,.045);
+      --surface-strong: rgba(15,23,42,.075);
+      --surface-active: rgba(2,132,199,.10);
+      --text: #111827;
+      --text-strong: #020617;
+      --muted: #64748b;
+      --muted-2: #94a3b8;
+      --border: rgba(15,23,42,.11);
+      --border-strong: rgba(15,23,42,.19);
+      --mark: #fde047;
+      --mark-text: #292000;
+      --mark-current: #fb923c;
+      --shadow: rgba(15,23,42,.11);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { max-width: 100%; overflow-x: clip; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 8% -10%, rgba(34,197,94,.19), transparent 29rem),
+        radial-gradient(circle at 87% 0%, rgba(56,189,248,.24), transparent 32rem),
+        radial-gradient(circle at 62% 110%, rgba(167,139,250,.13), transparent 30rem),
+        linear-gradient(135deg, var(--bg-0), var(--bg-1) 46%, var(--bg-2));
+      color: var(--text);
+      font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148,163,184,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,.035) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.82), transparent 80%);
+    }
+    button, input, a { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; }
+
+    .page {
+      width: min(1540px, calc(100vw - 42px));
+      margin: 0 auto;
+      padding: 26px 0 38px;
+      position: relative;
+    }
+    .hero, .metric, .panel, .navigator, .document-section, .notice {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: 0 20px 60px var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      border-radius: var(--radius-xl);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 460px;
+      height: 460px;
+      right: -130px;
+      bottom: -220px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(56,189,248,.20), transparent 66%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 20px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 12px;
+      height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 18px rgba(56,189,248,.65);
+    }
+    h1, h2, h3 { margin: 0; color: var(--text-strong); }
+    h1 {
+      max-width: 1080px;
+      font-size: clamp(31px, 4.25vw, 56px);
+      line-height: 1;
+      letter-spacing: -.055em;
+      overflow-wrap: anywhere;
+    }
+    h2 { font-size: 19px; letter-spacing: -.025em; }
+    h3 { font-size: 15px; letter-spacing: -.015em; }
+    .subtitle {
+      max-width: 920px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .status-pill, .chip, .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status-pill {
+      min-width: 148px;
+      padding: 10px 14px;
+      border: 1px solid rgba(34,197,94,.42);
+      background: rgba(34,197,94,.14);
+      color: var(--ok);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .status-pill.warning {
+      border-color: rgba(245,158,11,.42);
+      background: rgba(245,158,11,.14);
+      color: var(--warning);
+    }
+    .meta-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 22px;
+    }
+    .chip {
+      max-width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      text-align: left;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .metric {
+      position: relative;
+      min-height: 112px;
+      overflow: hidden;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, var(--surface-strong), var(--surface));
+    }
+    .metric::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: .94;
+    }
+    .metric-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      margin-top: 8px;
+      color: var(--text-strong);
+      font-size: clamp(22px, 2.5vw, 32px);
+      font-weight: 950;
+      letter-spacing: -.04em;
+      overflow-wrap: anywhere;
+    }
+    .metric-note { margin-top: 5px; color: var(--muted-2); font-size: 12px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(255px, 302px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+      min-width: 0;
+    }
+    .sidebar { min-width: 0; position: relative; align-self: stretch; }
+    .sidebar-sticky {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
+      scrollbar-gutter: stable;
+    }
+    .sidebar-sticky::-webkit-scrollbar { width: 8px; }
+    .sidebar-sticky::-webkit-scrollbar-thumb {
+      background: var(--surface-strong);
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background-clip: content-box;
+    }
+    .panel {
+      min-width: 0;
+      padding: 17px;
+      border-radius: var(--radius-md);
+    }
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .panel-subtitle { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .search {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      outline: none;
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 650;
+    }
+    .search:focus {
+      border-color: rgba(56,189,248,.72);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.12);
+    }
+    .term-list, .location-list, .quick-links { display: grid; gap: 8px; }
+    .term-button, .location-button, .quick-button, .action-link {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color .14s ease, background .14s ease, transform .14s ease;
+    }
+    .term-button:hover, .location-button:hover, .quick-button:hover, .action-link:hover {
+      border-color: var(--border-strong);
+      background: var(--surface-strong);
+    }
+    .term-button:active, .location-button:active, .quick-button:active { transform: translateY(1px); }
+    .term-button {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .term-button.active {
+      border-color: rgba(56,189,248,.58);
+      background: var(--surface-active);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .term-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .badge {
+      min-width: 30px;
+      padding: 3px 8px;
+      border: 1px solid rgba(56,189,248,.28);
+      background: rgba(56,189,248,.13);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .location-list {
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+    .location-button {
+      display: grid;
+      gap: 3px;
+      padding: 9px 10px;
+      text-align: left;
+    }
+    .location-button.active {
+      border-color: rgba(250,204,21,.60);
+      background: rgba(250,204,21,.10);
+      box-shadow: inset 3px 0 0 var(--mark);
+    }
+    .location-main {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .location-number { color: var(--accent); }
+    .location-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .location-term { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .list-note { margin: 9px 0 0; color: var(--muted-2); font-size: 11px; }
+    .quick-button, .action-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .action-link.primary {
+      border-color: rgba(56,189,248,.44);
+      background: rgba(56,189,248,.13);
+      color: var(--accent);
+    }
+    .source-path {
+      display: block;
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: rgba(2,6,23,.18);
+      color: var(--muted);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 10px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .content { min-width: 0; display: grid; gap: 15px; align-content: start; }
+    .navigator {
+      position: sticky;
+      top: 16px;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 13px 14px;
+      border-radius: var(--radius-md);
+      background: color-mix(in srgb, var(--panel-solid) 92%, transparent);
+    }
+    .nav-button {
+      min-width: 112px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 800;
+    }
+    .nav-button:hover:not(:disabled) { border-color: rgba(56,189,248,.58); background: var(--surface-active); }
+    .nav-button:disabled { opacity: .42; cursor: not-allowed; }
+    .nav-center { min-width: 0; display: grid; gap: 6px; }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+    .nav-status { color: var(--text-strong); font-size: 13px; font-weight: 900; white-space: nowrap; }
+    .nav-location { min-width: 0; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+    .progress-track {
+      height: 7px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+    }
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .18s ease;
+    }
+
+    .notice {
+      padding: 13px 15px;
+      border-color: rgba(245,158,11,.38);
+      border-radius: var(--radius-md);
+      background: rgba(245,158,11,.10);
+      color: #fde68a;
+      box-shadow: none;
+    }
+    html[data-theme="light"] .notice { color: #7c5200; }
+
+    .document-section {
+      scroll-margin-top: 108px;
+      overflow: clip;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, var(--panel), rgba(15,23,42,.75));
+    }
+    .document-section::before {
+      content: "";
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: .9;
+    }
+    .section-header {
+      position: sticky;
+      top: 88px;
+      z-index: 12;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
+      cursor: pointer;
+      list-style: none;
+    }
+    .section-header::-webkit-details-marker { display: none; }
+    .section-heading { min-width: 0; display: flex; align-items: center; gap: 10px; }
+    .section-caret {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 11px;
+      transition: transform .16s ease;
+    }
+    .document-section:not([open]) .section-caret { transform: rotate(-90deg); }
+    .section-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .section-kind {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .045em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section-body { padding: 17px 18px 20px; }
+    .text-line, .paragraph {
+      position: relative;
+      margin: 0;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .text-line {
+      min-height: 28px;
+      padding: 4px 9px 4px 62px;
+    }
+    .text-line:hover, .paragraph:hover { background: var(--surface); }
+    .paragraph { margin-bottom: 9px; padding: 5px 9px; }
+    .line-number {
+      position: absolute;
+      left: 8px;
+      width: 40px;
+      color: var(--muted-2);
+      text-align: right;
+      user-select: none;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 10px;
+    }
+    .table-scroll {
+      max-width: 100%;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(2,6,23,.16);
+    }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; }
+    th, td {
+      max-width: 340px;
+      padding: 9px 10px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      text-align: left;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--panel-solid);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+    }
+    td { color: var(--text); font-size: 12px; }
+    td:first-child, th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      width: 66px;
+      background: var(--panel-solid);
+      color: var(--muted);
+      text-align: right;
+    }
+    tr:hover td { background: var(--surface); }
+    tr:hover td:first-child { background: var(--panel-soft); }
+
+    mark.sf-match {
+      scroll-margin-top: 150px;
+      padding: 1px 4px;
+      border-radius: 5px;
+      background: var(--mark);
+      color: var(--mark-text);
+      font-weight: 850;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.13);
+      transition: opacity .15s ease, transform .15s ease, outline-color .15s ease;
+      cursor: pointer;
+    }
+    mark.sf-match.current {
+      background: var(--mark-current);
+      outline: 3px solid rgba(56,189,248,.92);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 7px rgba(56,189,248,.13), 0 8px 24px rgba(0,0,0,.24);
+    }
+    mark.sf-match.dimmed { opacity: .22; }
+    .empty {
+      padding: 38px;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--muted);
+      text-align: center;
+    }
+    .footer { margin-top: 22px; color: var(--muted-2); font-size: 12px; text-align: center; }
+    .kbd {
+      display: inline-flex;
+      padding: 1px 6px;
+      border: 1px solid var(--border);
+      border-bottom-color: var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-family: Consolas, monospace;
+      font-size: 10px;
+    }
+
+    @media (max-width: 1100px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .layout { grid-template-columns: minmax(235px, 275px) minmax(0, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .page { width: min(100vw - 22px, 1540px); padding-top: 14px; }
+      .hero-grid { grid-template-columns: 1fr; }
+      .status-pill { justify-self: start; }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar-sticky {
+        position: static;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .navigator { top: 8px; }
+      .section-header { top: 82px; }
+    }
+    @media (max-width: 620px) {
+      .hero { padding: 20px; }
+      h1 { font-size: 32px; }
+      .metrics { grid-template-columns: 1fr; }
+      .navigator { grid-template-columns: 1fr 1fr; gap: 9px; }
+      .nav-center { grid-column: 1 / -1; grid-row: 1; }
+      .nav-button { min-width: 0; }
+      .section-header { top: 126px; }
+      .section-kind { display: none; }
+      .section-body { padding: 13px 10px 16px; }
+      .text-line { padding-left: 52px; }
+    }
+  </style>
+</head>
+<body>
+{% set view = data.get('document', {}) %}
+{% set highlight = data.get('highlight', {}) %}
+{% set terms = highlight.get('terms', []) %}
+{% set sections = view.get('sections', []) %}
+{% set category = highlight.get('category_name', '') %}
+{% set status_class = 'warning' if view.get('truncated') else '' %}
+<div class="page" id="top">
+  <header class="hero">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Smart Filter · Documento destacado</div>
+        <h1>{{ view.get('title', document.title) }}</h1>
+        <p class="subtitle">{{ report_brief.get('subtitle', 'Vista HTML navegable generada por RenderCore') }}</p>
+      </div>
+      <div class="status-pill {{ status_class }}" id="statusPill">0 coincidencias</div>
+    </div>
+    <div class="meta-row">
+      <span class="chip">Categoría: {{ category | replace('_', ' ') | title if category else 'Búsqueda directa' }}</span>
+      <span class="chip">Formato: {{ view.get('format', 'archivo') | upper }}</span>
+      {% if view.get('reader') %}<span class="chip">Lector: {{ view.get('reader') }}</span>{% endif %}
+      {% if view.get('source_size_label') %}<span class="chip">Tamaño: {{ view.get('source_size_label') }}</span>{% endif %}
+      {% if meta.get('generated_at') %}<span class="chip">Generado: {{ meta.get('generated_at') }}</span>{% endif %}
+    </div>
+  </header>
+
+  <section class="metrics" aria-label="Resumen del documento">
+    <article class="metric">
+      <div class="metric-label">Coincidencias</div>
+      <div class="metric-value" id="metricMatches">0</div>
+      <div class="metric-note">Apariciones detectadas en esta vista</div>
+    </article>
+    <article class="metric">
+      <div class="metric-label">Términos</div>
+      <div class="metric-value">{{ terms | length }}</div>
+      <div class="metric-note">Conceptos únicos encontrados</div>
+    </article>
+    <article class="metric">
+      <div class="metric-label">Secciones</div>
+      <div class="metric-value">{{ sections | length }}</div>
+      <div class="metric-note">Páginas, hojas o bloques representados</div>
+    </article>
+    <article class="metric">
+      <div class="metric-label">Formato</div>
+      <div class="metric-value">{{ view.get('format', 'archivo') | upper }}</div>
+      <div class="metric-note">Representación semántica segura</div>
+    </article>
+  </section>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-sticky">
+        <section class="panel">
+          <div class="panel-title"><h2>Filtrar</h2></div>
+          <input id="matchSearch" class="search" type="search" autocomplete="off" placeholder="Término, ubicación o contexto...">
+          <p class="panel-subtitle">Filtra la lista de coincidencias sin ocultar el documento.</p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Términos</h2><span class="badge">{{ terms | length }}</span></div>
+          <div class="term-list" id="termList">
+            <button type="button" class="term-button active" data-filter-term="">
+              <span class="term-name">Mostrar todos</span><span class="badge" id="allTermCount">0</span>
+            </button>
+            {% for item in terms %}
+            <button type="button" class="term-button" data-filter-term="{{ item.get('text', '') | e }}">
+              <span class="term-name">{{ item.get('text', '') }}</span>
+              <span class="badge" data-term-count="{{ item.get('text', '') | e }}">0</span>
+            </button>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Ubicaciones</h2><span class="badge" id="visibleCount">0</span></div>
+          <div class="location-list" id="locationList"></div>
+          <p class="list-note" id="locationNote">Las ubicaciones se generan desde el documento renderizado.</p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Contenido</h2></div>
+          <div class="quick-links">
+            {% for section in sections %}
+            <a class="action-link" href="#{{ section.get('id', 'section-' ~ loop.index) | e }}">
+              <span>{{ section.get('label', 'Sección ' ~ loop.index) }}</span><span>↗</span>
+            </a>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Acciones</h2></div>
+          <div class="quick-links">
+            {% if view.get('source_uri') %}<a class="action-link primary" href="{{ view.get('source_uri') }}"><span>Abrir archivo original</span><span>↗</span></a>{% endif %}
+            {% if view.get('source_directory_uri') %}<a class="action-link" href="{{ view.get('source_directory_uri') }}"><span>Abrir carpeta</span><span>↗</span></a>{% endif %}
+            <button type="button" class="quick-button" id="copyPath"><span>Copiar ruta</span><span>⧉</span></button>
+            <button type="button" class="quick-button" id="expandAll"><span>Expandir secciones</span><span>＋</span></button>
+            <button type="button" class="quick-button" id="collapseAll"><span>Contraer secciones</span><span>−</span></button>
+            <a class="action-link" href="#top"><span>Volver arriba</span><span>↑</span></a>
+          </div>
+          <span class="source-path" id="sourcePath">{{ view.get('source_path', '') }}</span>
+          <p class="panel-subtitle">Atajos: <span class="kbd">←</span> anterior · <span class="kbd">→</span> siguiente</p>
+        </section>
+      </div>
+    </aside>
+
+    <section class="content">
+      <nav class="navigator" aria-label="Navegación entre coincidencias">
+        <button type="button" class="nav-button" id="previousMatch">← Anterior</button>
+        <div class="nav-center">
+          <div class="nav-row">
+            <span class="nav-status" id="matchStatus">0 de 0</span>
+            <span class="nav-location" id="currentLocation">Sin coincidencia seleccionada</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="matchProgress"></div></div>
+        </div>
+        <button type="button" class="nav-button" id="nextMatch">Siguiente →</button>
+      </nav>
+
+      {% if view.get('truncated') %}
+      <div class="notice">La vista fue limitada por seguridad. El archivo original permanece completo y no fue modificado.</div>
+      {% endif %}
+
+      {% if sections %}
+        {% for section in sections %}
+        <details class="document-section" id="{{ section.get('id', 'section-' ~ loop.index) | e }}" open>
+          <summary class="section-header">
+            <span class="section-heading"><span class="section-caret">▼</span><h2 class="section-label">{{ section.get('label', 'Sección ' ~ loop.index) }}</h2></span>
+            <span class="section-kind">{{ section.get('kind', 'contenido') }}</span>
+          </summary>
+          <div class="section-body" data-highlight-scope>
+            {% for block in section.get('blocks', []) %}
+              {% if block.get('type') == 'table' %}
+              <div class="table-scroll" data-location="{{ block.get('location_label', section.get('label', 'Tabla')) | e }}">
+                <table>
+                  {% set rows = block.get('rows', []) %}
+                  {% set max_columns = block.get('max_columns', 0) %}
+                  <thead><tr><th>#</th>{% for column_index in range(max_columns) %}<th>{{ block.get('headers', [])[column_index] if column_index < block.get('headers', []) | length else 'Columna ' ~ (column_index + 1) }}</th>{% endfor %}</tr></thead>
+                  <tbody>
+                  {% for row in rows %}
+                    <tr data-location="{{ row.get('location_label', section.get('label', '') ~ ' · Fila ' ~ row.get('number', loop.index)) | e }}">
+                      <td>{{ row.get('number', loop.index) }}</td>
+                      {% for column_index in range(max_columns) %}<td>{{ row.get('cells', [])[column_index] if column_index < row.get('cells', []) | length else '' }}</td>{% endfor %}
+                    </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% elif block.get('type') == 'paragraph' %}
+              <p class="paragraph" data-location="{{ block.get('location_label', section.get('label', '')) | e }}">{{ block.get('text', '') }}</p>
+              {% else %}
+              <p class="text-line" data-location="{{ block.get('location_label', 'Línea ' ~ block.get('line_number', loop.index)) | e }}"><span class="line-number">{{ block.get('line_number', loop.index) }}</span>{{ block.get('text', '') }}</p>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </details>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No hay contenido estructurado disponible para este archivo.</div>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer class="footer">Smart Filter · RenderCore · visor documental destacado · {{ meta.get('generated_at', '') }}</footer>
+</div>
+
+<script>
+(() => {
+  const sourceTerms = {{ terms | map(attribute='text') | list | tojson }}.filter(Boolean);
+  const accentMap = {
+    a: '[aáàäâãå]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöôõ]', u: '[uúùüû]',
+    n: '[nñ]', c: '[cç]'
+  };
+  const normalize = value => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+  const patternFor = term => Array.from(String(term || '')).map(char => {
+    const lower = char.toLowerCase();
+    if (accentMap[lower]) return accentMap[lower];
+    if (/\s/.test(char)) return '\\s+';
+    return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).join('');
+
+  const terms = [...sourceTerms].sort((a, b) => b.length - a.length);
+  const normalizedTermMap = new Map(terms.map(term => [normalize(term), term]));
+  const regex = terms.length
+    ? new RegExp(terms.map(patternFor).map(pattern => `(${pattern})`).join('|'), 'giu')
+    : null;
+
+  if (regex) {
+    for (const scope of document.querySelectorAll('[data-highlight-scope]')) {
+      const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement && node.parentElement.closest('mark,script,style,button,summary')) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const node of nodes) {
+        const text = node.nodeValue;
+        regex.lastIndex = 0;
+        let match;
+        let cursor = 0;
+        let changed = false;
+        const fragment = document.createDocumentFragment();
+        while ((match = regex.exec(text)) !== null) {
+          changed = true;
+          if (match.index > cursor) fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+          const mark = document.createElement('mark');
+          mark.className = 'sf-match';
+          mark.textContent = match[0];
+          mark.dataset.term = normalizedTermMap.get(normalize(match[0])) || match[0];
+          const locationOwner = node.parentElement ? node.parentElement.closest('[data-location]') : null;
+          mark.dataset.location = locationOwner ? locationOwner.dataset.location || '' : '';
+          fragment.append(mark);
+          cursor = match.index + match[0].length;
+          if (match[0].length === 0) regex.lastIndex += 1;
+        }
+        if (changed) {
+          if (cursor < text.length) fragment.append(document.createTextNode(text.slice(cursor)));
+          node.parentNode.replaceChild(fragment, node);
+        }
+      }
+    }
+  }
+
+  const marks = [...document.querySelectorAll('mark.sf-match')];
+  const sourcePath = {{ view.get('source_path', '') | tojson }};
+  const maxLocationButtons = 300;
+  let activeTerm = '';
+  let searchQuery = '';
+  let currentIndex = -1;
+  let visibleIndices = [];
+
+  marks.forEach((mark, index) => {
+    mark.id = `sf-match-${index + 1}`;
+    mark.dataset.matchIndex = String(index);
+    const owner = mark.closest('[data-location]');
+    const context = owner ? owner.textContent || '' : mark.textContent || '';
+    mark.dataset.context = normalize(context).slice(0, 240);
+    mark.addEventListener('click', () => selectIndex(index, true));
+  });
+
+  const counts = new Map();
+  for (const mark of marks) {
+    const key = normalize(mark.dataset.term);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  const metricMatches = document.getElementById('metricMatches');
+  const statusPill = document.getElementById('statusPill');
+  const allTermCount = document.getElementById('allTermCount');
+  metricMatches.textContent = String(marks.length);
+  statusPill.textContent = `${marks.length} ${marks.length === 1 ? 'coincidencia' : 'coincidencias'}`;
+  allTermCount.textContent = String(marks.length);
+
+  document.querySelectorAll('[data-term-count]').forEach(node => {
+    node.textContent = String(counts.get(normalize(node.dataset.termCount)) || 0);
+  });
+
+  function matchesFilters(mark) {
+    const termOk = !activeTerm || normalize(mark.dataset.term) === activeTerm;
+    const queryOk = !searchQuery
+      || normalize(mark.dataset.term).includes(searchQuery)
+      || normalize(mark.dataset.location).includes(searchQuery)
+      || (mark.dataset.context || '').includes(searchQuery);
+    return termOk && queryOk;
+  }
+
+  function ensureSectionOpen(mark) {
+    const section = mark.closest('details.document-section');
+    if (section && !section.open) section.open = true;
+  }
+
+  function scrollToMark(mark) {
+    ensureSectionOpen(mark);
+    mark.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  }
+
+  function setCurrent(index, shouldScroll) {
+    marks.forEach(item => item.classList.remove('current'));
+    document.querySelectorAll('.location-button.active').forEach(item => item.classList.remove('active'));
+
+    if (index < 0 || index >= marks.length || !visibleIndices.includes(index)) {
+      currentIndex = -1;
+      updateNavigator();
+      return;
+    }
+    currentIndex = index;
+    const mark = marks[index];
+    mark.classList.add('current');
+    const locationButton = document.querySelector(`.location-button[data-match-index="${index}"]`);
+    if (locationButton) {
+      locationButton.classList.add('active');
+      locationButton.scrollIntoView({ block: 'nearest' });
+    }
+    if (shouldScroll) scrollToMark(mark);
+    updateNavigator();
+  }
+
+  function selectIndex(index, shouldScroll = true) {
+    if (!visibleIndices.includes(index)) return;
+    setCurrent(index, shouldScroll);
+  }
+
+  function renderLocationList() {
+    const list = document.getElementById('locationList');
+    const note = document.getElementById('locationNote');
+    const visibleCount = document.getElementById('visibleCount');
+    list.textContent = '';
+    visibleCount.textContent = String(visibleIndices.length);
+
+    if (!visibleIndices.length) {
+      const empty = document.createElement('div');
+      empty.className = 'list-note';
+      empty.textContent = 'No hay coincidencias para el filtro actual.';
+      list.append(empty);
+      note.textContent = 'Modifica el término o limpia el filtro.';
+      return;
+    }
+
+    const shown = visibleIndices.slice(0, maxLocationButtons);
+    shown.forEach((index, position) => {
+      const mark = marks[index];
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'location-button';
+      button.dataset.matchIndex = String(index);
+
+      const main = document.createElement('span');
+      main.className = 'location-main';
+      const number = document.createElement('span');
+      number.className = 'location-number';
+      number.textContent = String(position + 1).padStart(2, '0');
+      const label = document.createElement('span');
+      label.className = 'location-label';
+      label.textContent = mark.dataset.location || 'Ubicación no especificada';
+      main.append(number, label);
+
+      const term = document.createElement('span');
+      term.className = 'location-term';
+      term.textContent = mark.dataset.term || mark.textContent || '';
+      button.append(main, term);
+      button.addEventListener('click', () => selectIndex(index, true));
+      list.append(button);
+    });
+
+    note.textContent = visibleIndices.length > maxLocationButtons
+      ? `Se muestran las primeras ${maxLocationButtons} de ${visibleIndices.length} ubicaciones.`
+      : `${visibleIndices.length} ubicaciones disponibles.`;
+  }
+
+  function updateNavigator() {
+    const status = document.getElementById('matchStatus');
+    const location = document.getElementById('currentLocation');
+    const progress = document.getElementById('matchProgress');
+    const previous = document.getElementById('previousMatch');
+    const next = document.getElementById('nextMatch');
+
+    if (!visibleIndices.length || currentIndex < 0) {
+      status.textContent = `0 de ${visibleIndices.length}`;
+      location.textContent = visibleIndices.length ? 'Selecciona una coincidencia' : 'Sin coincidencias visibles';
+      progress.style.width = '0%';
+      previous.disabled = true;
+      next.disabled = true;
+      return;
+    }
+
+    const position = visibleIndices.indexOf(currentIndex);
+    const mark = marks[currentIndex];
+    status.textContent = `${position + 1} de ${visibleIndices.length}`;
+    location.textContent = `${mark.dataset.term || mark.textContent} · ${mark.dataset.location || 'Ubicación no especificada'}`;
+    progress.style.width = `${((position + 1) / visibleIndices.length) * 100}%`;
+    previous.disabled = visibleIndices.length < 2;
+    next.disabled = visibleIndices.length < 2;
+  }
+
+  function refreshFilters({ jumpToFirst = false } = {}) {
+    visibleIndices = marks
+      .map((mark, index) => ({ mark, index }))
+      .filter(item => matchesFilters(item.mark))
+      .map(item => item.index);
+
+    marks.forEach((mark, index) => mark.classList.toggle('dimmed', !visibleIndices.includes(index)));
+    renderLocationList();
+
+    if (!visibleIndices.includes(currentIndex)) currentIndex = -1;
+    if ((jumpToFirst || currentIndex < 0) && visibleIndices.length) {
+      setCurrent(visibleIndices[0], jumpToFirst);
+    } else {
+      setCurrent(currentIndex, false);
+    }
+  }
+
+  function move(step) {
+    if (!visibleIndices.length) return;
+    const currentPosition = visibleIndices.indexOf(currentIndex);
+    const nextPosition = currentPosition < 0
+      ? 0
+      : (currentPosition + step + visibleIndices.length) % visibleIndices.length;
+    setCurrent(visibleIndices[nextPosition], true);
+  }
+
+  document.querySelectorAll('[data-filter-term]').forEach(button => {
+    button.addEventListener('click', () => {
+      activeTerm = normalize(button.dataset.filterTerm || '');
+      document.querySelectorAll('[data-filter-term]').forEach(item => item.classList.remove('active'));
+      button.classList.add('active');
+      refreshFilters({ jumpToFirst: true });
+    });
+  });
+
+  document.getElementById('matchSearch').addEventListener('input', event => {
+    searchQuery = normalize(event.target.value);
+    refreshFilters({ jumpToFirst: false });
+  });
+  document.getElementById('previousMatch').addEventListener('click', () => move(-1));
+  document.getElementById('nextMatch').addEventListener('click', () => move(1));
+  document.getElementById('expandAll').addEventListener('click', () => {
+    document.querySelectorAll('details.document-section').forEach(section => { section.open = true; });
+  });
+  document.getElementById('collapseAll').addEventListener('click', () => {
+    document.querySelectorAll('details.document-section').forEach(section => { section.open = false; });
+  });
+  document.getElementById('copyPath').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const originalText = button.querySelector('span')?.textContent || 'Copiar ruta';
+    try {
+      await navigator.clipboard.writeText(sourcePath);
+      if (button.querySelector('span')) button.querySelector('span').textContent = 'Ruta copiada';
+    } catch (_) {
+      const temporary = document.createElement('textarea');
+      temporary.value = sourcePath;
+      document.body.append(temporary);
+      temporary.select();
+      document.execCommand('copy');
+      temporary.remove();
+      if (button.querySelector('span')) button.querySelector('span').textContent = 'Ruta copiada';
+    }
+    window.setTimeout(() => {
+      if (button.querySelector('span')) button.querySelector('span').textContent = originalText;
+    }, 1300);
+  });
+
+  document.addEventListener('keydown', event => {
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
+  });
+
+  refreshFilters({ jumpToFirst: marks.length > 0 });
+})();
+</script>
+</body>
+</html>

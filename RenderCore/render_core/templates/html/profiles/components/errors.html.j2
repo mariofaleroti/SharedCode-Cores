@@ -1,0 +1,35 @@
+{#
+    components/errors.html.j2
+
+    Componente reutilizable para mostrar errores del render o del reporte.
+
+    Variables esperadas:
+    - errors
+
+    Este componente:
+    - solo se muestra si hay errores
+    - no decide de donde vienen los errores
+    - solo dibuja la seccion visual
+#}
+
+{% if errors %}
+    <section class="section">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M15 9 9 15"></path>
+                <path d="M9 9l6 6"></path>
+            </svg>
+            Errors
+        </h2>
+
+        <div class="alert-stack">
+            {% for item in errors %}
+                <div class="alert-line">
+                    <span class="status-badge status-error">Error</span>
+                    <span class="alert-message">{{ item }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}

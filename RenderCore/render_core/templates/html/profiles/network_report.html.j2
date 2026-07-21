@@ -1,0 +1,53 @@
+{#  network_report.html.j2
+
+    Envoltorio del reporte individual de red.
+
+    Este archivo define la estructura propia del reporte:
+    - titulo de pagina
+    - titulo visible
+    - estilos especificos de red
+    - inclusion del contenido interno
+
+    El contenido principal vive en:  report_sections/network_content.html.j2
+
+    Esto permite reutilizar el mismo contenido en otros reportes sin duplicar HTML. 
+#}
+
+
+{% extends "report_base.html.j2" %}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% block report_page_title %}Reporte de Red - Toolkit IT{% endblock %}
+
+{% block report_title %}
+    {{ meta.tool_name | default("Toolkit IT") }} - Reporte de Red
+{% endblock %}
+
+{% block report_styles %}
+    .network-panel-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .network-wide-panel {
+        grid-column: 1 / -1;
+    }
+
+    @media (max-width: 900px) {
+        .network-panel-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+{% endblock %}
+
+{% block content %}
+
+{# Incluye el contenido interno del reporte de red.
+   La estructura del documento queda en este archivo. El cuerpo visual del reporte queda separado en report_sections.
+ #}
+
+{% include "report_sections/network_content.html.j2" %}
+
+{% endblock %}

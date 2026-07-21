@@ -1,0 +1,245 @@
+{#
+    extras_content.html.j2
+
+    Contenido interno del reporte de extras del sistema.
+
+    Este archivo no define:
+    - base HTML
+    - titulo de pagina
+    - encabezado
+    - footer
+    - estilos propios del wrapper
+
+    Solo contiene el cuerpo visual del reporte:
+    - resumen
+    - diagnosticos
+    - errores
+    - tablas y paneles de extras
+
+    Puede ser incluido por:
+    - extras_report.html.j2
+    - full_report.html.j2 en el futuro
+#}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% set embedded_report = embedded_report | default(false) %}
+
+{#
+    Renderiza valores simples para mostrarlos en tablas.
+
+    Esta macro evita repetir formato para:
+    - valores vacios
+    - booleanos
+    - listas simples
+    - valores escalares
+#}
+{% macro render_value(value) %}
+    {% if value is none %}
+        N/A
+    {% elif value is boolean %}
+        {% if value %}Si{% else %}No{% endif %}
+    {% elif value is sequence and value is not string %}
+        {% if value | length > 0 %}
+            {{ value | join(", ") }}
+        {% else %}
+            N/A
+        {% endif %}
+    {% else %}
+        {{ value | default("N/A", true) }}
+    {% endif %}
+{% endmacro %}
+
+{#
+    Renderiza un objeto como tabla clave / valor.
+#}
+{% macro render_mapping_table(mapping_value) %}
+    <table class="detail-table">
+        <tbody>
+            {% for item_key, item_value in mapping_value.items() %}
+                <tr>
+                    <th>{{ item_key }}</th>
+                    <td>{{ render_value(item_value) }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+
+{#
+    Renderiza una lista como tabla.
+
+    Si la lista contiene objetos, crea columnas usando las claves
+    del primer objeto.
+#}
+{% macro render_sequence_table(sequence_value) %}
+    {% if sequence_value | length == 0 %}
+        <p class="empty-message">No se encontraron elementos.</p>
+    {% else %}
+        {% set first_item = sequence_value[0] %}
+
+        {% if first_item is mapping %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            {% for column_name in first_item.keys() %}
+                                <th>{{ column_name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row_item in sequence_value %}
+                            <tr>
+                                {% for column_name in first_item.keys() %}
+                                    <td>{{ render_value(row_item[column_name]) }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <table class="detail-table">
+                <tbody>
+                    {% for item in sequence_value %}
+                        <tr>
+                            <th>Item {{ loop.index }}</th>
+                            <td>{{ render_value(item) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% endif %}
+{% endmacro %}
+
+{% if not embedded_report %}
+
+<div class="overview-grid">
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+            </svg>
+            Resumen
+        </h2>
+
+        <div class="summary-card-grid">
+            {% set status_value = summary.status | default("N/A") %}
+
+            {% call summary_card.render_summary_card("Estado", status_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6 9 17l-5-5"></path>
+                </svg>
+            {% endcall %}
+
+            {% set sections_value = data | length if data else 0 %}
+
+            {% call summary_card.render_summary_card("Secciones", sections_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
+            {% endcall %}
+
+            {% set items_value = summary.item_count | default(summary.total_count | default("N/A")) %}
+
+            {% call summary_card.render_summary_card("Items", items_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 6h13"></path>
+                    <path d="M8 12h13"></path>
+                    <path d="M8 18h13"></path>
+                    <path d="M3 6h.01"></path>
+                    <path d="M3 12h.01"></path>
+                    <path d="M3 18h.01"></path>
+                </svg>
+            {% endcall %}
+
+            {% set warnings_value = summary.warnings_count | default(0) %}
+
+            {% call summary_card.render_summary_card("Avisos", warnings_value, "warning") %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                </svg>
+            {% endcall %}
+
+            {% set critical_value = summary.critical_count | default(0) %}
+
+            {% call summary_card.render_summary_card("Criticos", critical_value, "critical") %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M15 9 9 15"></path>
+                    <path d="M9 9l6 6"></path>
+                </svg>
+            {% endcall %}
+        </div>
+
+        <div class="summary-meta-line">
+            <span>Tipo: {{ meta.report_type | default("extras") }}</span>
+            <span>Generado: {{ data.CollectedAt | default(meta.generated_at | default("N/A")) }}</span>
+        </div>
+    </section>
+
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+                <path d="M12 9v4"></path>
+                <path d="M12 17h.01"></path>
+            </svg>
+            Diagnosticos
+        </h2>
+
+        {% include "components/diagnostics.html.j2" %}
+    </section>
+</div>
+
+{% include "components/errors.html.j2" %}
+
+{% endif %}
+
+<section class="section" id="extras-section">
+    <h2 class="section-title">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7h16"></path>
+            <path d="M4 12h16"></path>
+            <path d="M4 17h16"></path>
+        </svg>
+        Otros
+    </h2>
+
+    {% if data %}
+        <div class="extras-panel-grid">
+            {% for section_name, section_value in data.items() %}
+                <div class="detail-panel {% if section_value is sequence and section_value is not string %}extras-wide-panel{% endif %}">
+                    <h3 class="detail-panel-title">{{ section_name }}</h3>
+
+                    {% if section_value is mapping %}
+                        {{ render_mapping_table(section_value) }}
+                    {% elif section_value is sequence and section_value is not string %}
+                        {{ render_sequence_table(section_value) }}
+                    {% else %}
+                        <table class="detail-table">
+                            <tbody>
+                                <tr>
+                                    <th>Valor</th>
+                                    <td>{{ render_value(section_value) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-message">No se encontraron datos adicionales.</p>
+    {% endif %}
+</section>

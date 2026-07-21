@@ -1,0 +1,850 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Callable, Iterable, Mapping, Sequence
+
+from ..dependencies import require_customtkinter
+from ..styles.colors import get_accent_colors, get_control_colors, get_neutral_button_colors, get_surface_colors
+from ..styles.fonts import FontConfig
+
+VALID_BUTTON_STYLES = {"primary", "secondary", "danger", "ghost"}
+VALID_PICKER_MODES = {"folder", "file", "save_file"}
+
+
+@dataclass(frozen=True)
+class ChoiceOption:
+    """Declarative option for combo-like controls.
+
+    `label` is what the user sees. `value` is the stable value a tool can use in
+    its own logic. GuiCore does not interpret the value.
+    """
+
+    label: str
+    value: Any | None = None
+
+    @property
+    def resolved_value(self) -> Any:
+        return self.label if self.value is None else self.value
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"label": self.label, "value": self.resolved_value}
+
+
+@dataclass(frozen=True)
+class ButtonSpec:
+    """Declarative button contract for sidebar/action areas."""
+
+    text: str
+    command_key: str | None = None
+    style: str = "primary"
+    enabled: bool = True
+
+    @property
+    def key(self) -> str:
+        return self.command_key or normalize_command_key(self.text)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "text": self.text,
+            "command_key": self.key,
+            "style": normalize_button_style(self.style),
+            "enabled": self.enabled,
+        }
+
+
+def normalize_command_key(text: str | None) -> str:
+    value = str(text or "").lower().strip().replace(" ", "_").replace("-", "_")
+    return "_".join(part for part in value.split("_") if part) or "action"
+
+
+def normalize_button_style(style: str | None) -> str:
+    value = str(style or "primary").lower().strip()
+    if value not in VALID_BUTTON_STYLES:
+        return "primary"
+    return value
+
+
+def normalize_picker_mode(mode: str | None) -> str:
+    value = str(mode or "folder").lower().strip().replace("-", "_")
+    if value not in VALID_PICKER_MODES:
+        return "folder"
+    return value
+
+
+def normalize_control_state(enabled: bool = True) -> str:
+    return "normal" if bool(enabled) else "disabled"
+
+
+def coerce_choice_options(values: Iterable[str | ChoiceOption | Mapping[str, Any]]) -> list[ChoiceOption]:
+    """Normalize combo values while keeping display labels stable and unique."""
+
+    options: list[ChoiceOption] = []
+    seen: set[str] = set()
+
+    for item in values:
+        if isinstance(item, ChoiceOption):
+            option = item
+        elif isinstance(item, Mapping):
+            option = ChoiceOption(label=str(item.get("label") or item.get("text") or item.get("value") or ""), value=item.get("value"))
+        else:
+            option = ChoiceOption(label=str(item))
+
+        label = option.label.strip()
+        if not label or label in seen:
+            continue
+        seen.add(label)
+        options.append(ChoiceOption(label=label, value=option.resolved_value))
+
+    return options
+
+
+def get_choice_labels(values: Iterable[str | ChoiceOption | Mapping[str, Any]]) -> list[str]:
+    return [option.label for option in coerce_choice_options(values)]
+
+
+def get_button_style_options(
+    style: str | None = "primary",
+    color_theme: str | None = "blue",
+    surface_theme: str | None = "default",
+    appearance_mode: str | None = "dark",
+) -> dict[str, Any]:
+    """Return CustomTkinter-compatible visual options for a named button style."""
+
+    normalized = normalize_button_style(style)
+    if normalized == "primary":
+        accent = get_accent_colors(color_theme)
+        return {
+            "fg_color": accent["primary"],
+            "hover_color": accent["hover"],
+            "text_color": "#ffffff",
+        }
+    if normalized == "secondary":
+        neutral = get_neutral_button_colors(appearance_mode, surface_theme)
+        return {
+            "fg_color": neutral["fg_color"],
+            "hover_color": neutral["hover_color"],
+            "text_color": neutral["text_color"],
+        }
+    if normalized == "danger":
+        return {
+            "fg_color": ("#b3261e", "#b3261e"),
+            "hover_color": ("#8c1d18", "#8c1d18"),
+            "text_color": "#ffffff",
+        }
+    if normalized == "ghost":
+        neutral = get_neutral_button_colors(appearance_mode, surface_theme)
+        return {
+            "fg_color": "transparent",
+            "hover_color": neutral["hover_color"],
+            "text_color": neutral["text_color"],
+            "border_width": 1,
+            "border_color": neutral["border_color"],
+        }
+    return {}
+
+
+def apply_standard_control_colors(
+    control: Any,
+    appearance_mode: str | None = "dark",
+    surface_theme: str | None = "default",
+    *,
+    include_dropdown: bool = False,
+) -> None:
+    """Apply the selected base palette to a CTk input-like control."""
+
+    colors = get_control_colors(appearance_mode, surface_theme)
+    options: dict[str, Any] = {
+        "fg_color": colors["fg_color"],
+        "border_color": colors["border_color"],
+        "text_color": colors["text_color"],
+    }
+    if include_dropdown:
+        options.update(
+            {
+                "button_color": colors["fg_color"],
+                "button_hover_color": colors["hover_color"],
+                "dropdown_fg_color": colors["dropdown_fg_color"],
+                "dropdown_hover_color": colors["dropdown_hover_color"],
+                "dropdown_text_color": colors["text_color"],
+            }
+        )
+    else:
+        options["placeholder_text_color"] = colors["placeholder_text_color"]
+    try:
+        control.configure(**options)
+    except Exception:
+        # Older CustomTkinter versions may not support every option. Apply the
+        # minimum safe subset instead of failing the whole UI refresh.
+        safe_options = {key: value for key, value in options.items() if key in {"fg_color", "border_color", "text_color"}}
+        try:
+            control.configure(**safe_options)
+        except Exception:
+            pass
+
+
+class SidebarFormSection:
+    """Reusable sidebar section for tool-specific controls.
+
+    The section owns only layout and visual consistency. Every tool decides what
+    the controls mean and which callbacks they execute.
+    """
+
+    def __init__(
+        self,
+        parent: Any,
+        title: str,
+        subtitle: str = "",
+        font_config: FontConfig | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=10)
+        self.frame.grid_columnconfigure(0, weight=1)
+        self._next_row = 0
+        self._widgets: list[Any] = []
+        self._last_font_config: FontConfig | None = self.font_config
+        self._last_color_theme: str | None = None
+        self._last_surface_theme: str | None = None
+        self._last_appearance_mode: str | None = None
+
+        self.title_label = ctk.CTkLabel(
+            self.frame,
+            text=title,
+            font=self.font_config.tuple("section", "bold"),
+            anchor="w",
+        )
+        self.title_label.grid(row=self._next_row, column=0, padx=2, pady=(4, 5), sticky="ew")
+        self._next_row += 1
+
+        self.subtitle_label = None
+        if subtitle:
+            self.subtitle_label = ctk.CTkLabel(
+                self.frame,
+                text=subtitle,
+                font=self.font_config.tuple("small"),
+                text_color="gray",
+                anchor="w",
+                justify="left",
+                wraplength=210,
+            )
+            self.subtitle_label.grid(row=self._next_row, column=0, padx=2, pady=(0, 8), sticky="ew")
+            self._next_row += 1
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def add_widget(self, widget: Any, pady: tuple[int, int] = (0, 10), sticky: str = "ew") -> Any:
+        widget.grid(row=self._next_row, column=0, pady=pady, sticky=sticky)
+        self._next_row += 1
+        self._widgets.append(widget)
+        # A section can be registered in GuiAppWindow before the app adds its
+        # controls. Keep the last visual preferences and apply them to every
+        # new child immediately, so controls created after startup do not fall
+        # back to CustomTkinter/default blue until the next manual refresh.
+        self._apply_visual_preferences_to_child(widget)
+        return widget
+
+    def _apply_visual_preferences_to_child(self, widget: Any) -> None:
+        apply_method = getattr(widget, "apply_visual_preferences", None)
+        if not callable(apply_method):
+            return
+        try:
+            apply_method(
+                font_config=self._last_font_config or self.font_config,
+                color_theme=self._last_color_theme,
+                surface_theme=self._last_surface_theme,
+                appearance_mode=self._last_appearance_mode,
+            )
+        except TypeError:
+            try:
+                apply_method(font_config=self._last_font_config or self.font_config, color_theme=self._last_color_theme)
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def add_labeled_entry(self, label: str, **kwargs: Any) -> "LabeledEntry":
+        return self.add_widget(LabeledEntry(self.frame, label, font_config=self.font_config, **kwargs))
+
+    def add_labeled_combo(self, label: str, values: Iterable[str | ChoiceOption | Mapping[str, Any]], **kwargs: Any) -> "LabeledComboBox":
+        return self.add_widget(LabeledComboBox(self.frame, label, values, font_config=self.font_config, **kwargs))
+
+    def add_path_picker(self, label: str, **kwargs: Any) -> "PathPicker":
+        return self.add_widget(PathPicker(self.frame, label, font_config=self.font_config, **kwargs))
+
+    def add_checkbox(self, text: str, **kwargs: Any) -> "LabeledCheckBox":
+        return self.add_widget(LabeledCheckBox(self.frame, text, font_config=self.font_config, **kwargs))
+
+    def add_switch(self, text: str, **kwargs: Any) -> "LabeledSwitch":
+        return self.add_widget(LabeledSwitch(self.frame, text, font_config=self.font_config, **kwargs))
+
+    def add_action_button(self, text: str, command: Callable[[], None] | None = None, **kwargs: Any) -> "ActionButton":
+        return self.add_widget(ActionButton(self.frame, text, command=command, font_config=self.font_config, **kwargs))
+
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.title_label.configure(font=self.font_config.tuple("section", "bold"))
+            if self.subtitle_label is not None:
+                self.subtitle_label.configure(font=self.font_config.tuple("small"))
+        self._last_font_config = self.font_config
+        self._last_color_theme = color_theme
+        self._last_surface_theme = surface_theme
+        self._last_appearance_mode = appearance_mode
+        surface = get_surface_colors(appearance_mode, surface_theme)
+        try:
+            self.frame.configure(fg_color=surface["sidebar"])
+            self.title_label.configure(text_color=get_control_colors(appearance_mode, surface_theme)["text_color"])
+            if self.subtitle_label is not None:
+                self.subtitle_label.configure(text_color=get_control_colors(appearance_mode, surface_theme)["label_text_color"])
+        except Exception:
+            pass
+        for widget in list(self._widgets):
+            self._apply_visual_preferences_to_child(widget)
+
+
+class LabeledEntry:
+    """Label + entry control for sidebar forms."""
+
+    def __init__(
+        self,
+        parent: Any,
+        label: str,
+        placeholder: str = "",
+        value: str = "",
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        show: str | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+
+        self.label = ctk.CTkLabel(
+            self.frame,
+            text=label,
+            font=self.font_config.tuple("small", "bold"),
+            text_color=("gray30", "gray72"),
+            anchor="w",
+        )
+        self.label.grid(row=0, column=0, padx=2, pady=(0, 4), sticky="ew")
+
+        entry_kwargs: dict[str, Any] = {
+            "placeholder_text": placeholder,
+            "font": self.font_config.tuple("body"),
+            "state": normalize_control_state(enabled),
+        }
+        if show:
+            entry_kwargs["show"] = show
+
+        self.entry = ctk.CTkEntry(self.frame, **entry_kwargs)
+        self.entry.grid(row=1, column=0, sticky="ew")
+        if value:
+            self.set_value(value)
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def get_value(self) -> str:
+        return self.entry.get()
+
+    def set_value(self, value: str) -> None:
+        previous_state = str(self.entry.cget("state"))
+        if previous_state == "disabled":
+            self.entry.configure(state="normal")
+        self.entry.delete(0, "end")
+        self.entry.insert(0, str(value))
+        if previous_state == "disabled":
+            self.entry.configure(state="disabled")
+
+    def clear(self) -> None:
+        self.set_value("")
+
+    def set_enabled(self, enabled: bool) -> None:
+        self.entry.configure(state=normalize_control_state(enabled))
+
+    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.label.configure(font=self.font_config.tuple("small", "bold"))
+            self.entry.configure(font=self.font_config.tuple("body"))
+        colors = get_control_colors(appearance_mode, surface_theme)
+        try:
+            self.frame.configure(fg_color="transparent")
+            self.label.configure(text_color=colors["label_text_color"])
+            apply_standard_control_colors(self.entry, appearance_mode, surface_theme)
+        except Exception:
+            pass
+
+
+class LabeledComboBox:
+    """Label + combo control with stable display labels."""
+
+    def __init__(
+        self,
+        parent: Any,
+        label: str,
+        values: Iterable[str | ChoiceOption | Mapping[str, Any]],
+        default_value: str | None = None,
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        command: Callable[[str], None] | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.options = coerce_choice_options(values)
+        labels = [option.label for option in self.options]
+        self._value_by_label = {option.label: option.resolved_value for option in self.options}
+
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+
+        self.label = ctk.CTkLabel(
+            self.frame,
+            text=label,
+            font=self.font_config.tuple("small", "bold"),
+            text_color=("gray30", "gray72"),
+            anchor="w",
+        )
+        self.label.grid(row=0, column=0, padx=2, pady=(0, 4), sticky="ew")
+
+        self.combo = ctk.CTkComboBox(
+            self.frame,
+            values=labels,
+            font=self.font_config.tuple("body"),
+            dropdown_font=self.font_config.tuple("body"),
+            state=normalize_control_state(enabled),
+            command=command,
+        )
+        self.combo.grid(row=1, column=0, sticky="ew")
+
+        if default_value and default_value in labels:
+            self.combo.set(default_value)
+        elif labels:
+            self.combo.set(labels[0])
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def get_label(self) -> str:
+        return self.combo.get()
+
+    def get_value(self) -> Any:
+        label = self.get_label()
+        return self._value_by_label.get(label, label)
+
+    def set_value(self, value: str) -> None:
+        self.combo.set(str(value))
+
+    def set_values(self, values: Iterable[str | ChoiceOption | Mapping[str, Any]], default_value: str | None = None) -> None:
+        self.options = coerce_choice_options(values)
+        labels = [option.label for option in self.options]
+        self._value_by_label = {option.label: option.resolved_value for option in self.options}
+        self.combo.configure(values=labels)
+        if default_value and default_value in labels:
+            self.combo.set(default_value)
+        elif labels:
+            self.combo.set(labels[0])
+        else:
+            self.combo.set("")
+
+    def set_enabled(self, enabled: bool) -> None:
+        self.combo.configure(state=normalize_control_state(enabled))
+
+    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.label.configure(font=self.font_config.tuple("small", "bold"))
+            self.combo.configure(font=self.font_config.tuple("body"), dropdown_font=self.font_config.tuple("body"))
+        colors = get_control_colors(appearance_mode, surface_theme)
+        try:
+            self.frame.configure(fg_color="transparent")
+            self.label.configure(text_color=colors["label_text_color"])
+            apply_standard_control_colors(self.combo, appearance_mode, surface_theme, include_dropdown=True)
+        except Exception:
+            pass
+
+
+class PathPicker:
+    """Entry + browse button for folder/file paths.
+
+    It only selects a path and returns it. The tool decides how that path is used.
+    """
+
+    def __init__(
+        self,
+        parent: Any,
+        label: str,
+        placeholder: str = "Seleccionar ruta...",
+        value: str = "",
+        mode: str = "folder",
+        button_text: str = "...",
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        filetypes: Sequence[tuple[str, str]] | None = None,
+        title: str | None = None,
+        on_change: Callable[[str], None] | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.mode = normalize_picker_mode(mode)
+        self.filetypes = tuple(filetypes or (("Todos los archivos", "*.*"),))
+        self.dialog_title = title or ("Seleccionar carpeta" if self.mode == "folder" else "Seleccionar archivo")
+        self.on_change = on_change
+
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+
+        self.label = ctk.CTkLabel(
+            self.frame,
+            text=label,
+            font=self.font_config.tuple("small", "bold"),
+            text_color=("gray30", "gray72"),
+            anchor="w",
+        )
+        self.label.grid(row=0, column=0, columnspan=2, padx=2, pady=(0, 4), sticky="ew")
+
+        self.entry = ctk.CTkEntry(
+            self.frame,
+            placeholder_text=placeholder,
+            font=self.font_config.tuple("body"),
+            state=normalize_control_state(enabled),
+        )
+        self.entry.grid(row=1, column=0, sticky="ew")
+
+        self.button = ctk.CTkButton(
+            self.frame,
+            text=button_text,
+            width=34,
+            command=self.open_dialog,
+            state=normalize_control_state(enabled),
+            font=self.font_config.tuple("body"),
+        )
+        self.button.grid(row=1, column=1, padx=(8, 0), sticky="e")
+
+        if value:
+            self.set_value(value)
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def get_value(self) -> str:
+        return self.entry.get()
+
+    def set_value(self, value: str) -> None:
+        previous_state = str(self.entry.cget("state"))
+        if previous_state == "disabled":
+            self.entry.configure(state="normal")
+        self.entry.delete(0, "end")
+        self.entry.insert(0, str(value))
+        if previous_state == "disabled":
+            self.entry.configure(state="disabled")
+        if callable(self.on_change):
+            self.on_change(str(value))
+
+    def clear(self) -> None:
+        self.set_value("")
+
+    def set_enabled(self, enabled: bool) -> None:
+        state = normalize_control_state(enabled)
+        self.entry.configure(state=state)
+        self.button.configure(state=state)
+
+    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.label.configure(font=self.font_config.tuple("small", "bold"))
+            self.entry.configure(font=self.font_config.tuple("body"))
+            self.button.configure(font=self.font_config.tuple("body"))
+        colors = get_control_colors(appearance_mode, surface_theme)
+        accent = get_accent_colors(color_theme)
+        try:
+            self.frame.configure(fg_color="transparent")
+            self.label.configure(text_color=colors["label_text_color"])
+            apply_standard_control_colors(self.entry, appearance_mode, surface_theme)
+            self.button.configure(fg_color=accent["primary"], hover_color=accent["hover"], text_color="#ffffff")
+        except Exception:
+            pass
+
+    def open_dialog(self) -> str | None:
+        try:
+            from tkinter import filedialog
+
+            if self.mode == "file":
+                selected = filedialog.askopenfilename(title=self.dialog_title, filetypes=self.filetypes)
+            elif self.mode == "save_file":
+                selected = filedialog.asksaveasfilename(title=self.dialog_title, filetypes=self.filetypes)
+            else:
+                selected = filedialog.askdirectory(title=self.dialog_title)
+        except Exception:
+            selected = ""
+
+        if selected:
+            self.set_value(str(selected))
+            return str(selected)
+        return None
+
+
+class LabeledCheckBox:
+    """Reusable checkbox row."""
+
+    def __init__(
+        self,
+        parent: Any,
+        text: str,
+        default: bool = False,
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        command: Callable[[], None] | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.variable = ctk.BooleanVar(value=bool(default))
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.checkbox = ctk.CTkCheckBox(
+            self.frame,
+            text=text,
+            variable=self.variable,
+            command=command,
+            font=self.font_config.tuple("body"),
+            state=normalize_control_state(enabled),
+        )
+        self.checkbox.grid(row=0, column=0, padx=2, pady=0, sticky="ew")
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def get_value(self) -> bool:
+        return bool(self.variable.get())
+
+    def set_value(self, value: bool) -> None:
+        self.variable.set(bool(value))
+
+    def set_enabled(self, enabled: bool) -> None:
+        self.checkbox.configure(state=normalize_control_state(enabled))
+
+    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.checkbox.configure(font=self.font_config.tuple("body"))
+        colors = get_control_colors(appearance_mode, surface_theme)
+        accent = get_accent_colors(color_theme)
+        try:
+            self.checkbox.configure(
+                fg_color=accent["primary"],
+                hover_color=accent["hover"],
+                border_color=colors["border_color"],
+                text_color=colors["text_color"],
+            )
+        except Exception:
+            pass
+
+
+class LabeledSwitch:
+    """Reusable switch row for persistent/boolean options."""
+
+    def __init__(
+        self,
+        parent: Any,
+        text: str,
+        default: bool = False,
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        command: Callable[[], None] | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.variable = ctk.BooleanVar(value=bool(default))
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.switch = ctk.CTkSwitch(
+            self.frame,
+            text=text,
+            variable=self.variable,
+            command=command,
+            font=self.font_config.tuple("body"),
+            state=normalize_control_state(enabled),
+        )
+        self.switch.grid(row=0, column=0, padx=2, pady=0, sticky="ew")
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def get_value(self) -> bool:
+        return bool(self.variable.get())
+
+    def set_value(self, value: bool) -> None:
+        self.variable.set(bool(value))
+
+    def set_enabled(self, enabled: bool) -> None:
+        self.switch.configure(state=normalize_control_state(enabled))
+
+    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.switch.configure(font=self.font_config.tuple("body"))
+        colors = get_control_colors(appearance_mode, surface_theme)
+        accent = get_accent_colors(color_theme)
+        try:
+            self.switch.configure(
+                progress_color=accent["primary"],
+                button_color=colors["text_color"],
+                button_hover_color=colors["label_text_color"],
+                text_color=colors["text_color"],
+            )
+        except Exception:
+            pass
+
+
+class ActionButton:
+    """Styled action button that can be placed in sidebar or content cards."""
+
+    def __init__(
+        self,
+        parent: Any,
+        text: str,
+        command: Callable[[], None] | None = None,
+        style: str = "primary",
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        height: int = 34,
+        color_theme: str | None = "blue",
+        surface_theme: str | None = "default",
+        appearance_mode: str | None = "dark",
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.style = normalize_button_style(style)
+        self.color_theme = str(color_theme or "blue")
+        self.surface_theme = str(surface_theme or "default")
+        self.appearance_mode = str(appearance_mode or "dark")
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+        options = get_button_style_options(self.style, self.color_theme)
+        self.button = ctk.CTkButton(
+            self.frame,
+            text=text,
+            command=command,
+            font=self.font_config.tuple("body"),
+            state=normalize_control_state(enabled),
+            height=height,
+            **options,
+        )
+        self.button.grid(row=0, column=0, sticky="ew")
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def set_enabled(self, enabled: bool) -> None:
+        self.button.configure(state=normalize_control_state(enabled))
+
+    def configure(self, **kwargs: Any) -> None:
+        self.button.configure(**kwargs)
+
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            self.button.configure(font=self.font_config.tuple("body"))
+        if color_theme is not None:
+            self.color_theme = str(color_theme)
+        if surface_theme is not None:
+            self.surface_theme = str(surface_theme)
+        if appearance_mode is not None:
+            self.appearance_mode = str(appearance_mode)
+        options = get_button_style_options(self.style, self.color_theme, self.surface_theme, self.appearance_mode)
+        if options:
+            self.button.configure(**options)
+
+
+class ButtonRow:
+    """Reusable row of styled buttons."""
+
+    def __init__(
+        self,
+        parent: Any,
+        buttons: Iterable[ButtonSpec | Mapping[str, Any]],
+        commands: Mapping[str, Callable[[], None]] | None = None,
+        font_config: FontConfig | None = None,
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.font_config = font_config or FontConfig()
+        self.commands = dict(commands or {})
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.buttons: dict[str, ActionButton] = {}
+
+        specs = self._coerce_button_specs(buttons)
+        for index, button_spec in enumerate(specs):
+            self.frame.grid_columnconfigure(index, weight=1)
+            button = ActionButton(
+                self.frame,
+                button_spec.text,
+                command=self.commands.get(button_spec.key),
+                style=button_spec.style,
+                font_config=self.font_config,
+                enabled=button_spec.enabled,
+            )
+            button.grid(row=0, column=index, padx=(0, 10 if index < len(specs) - 1 else 0), sticky="ew")
+            self.buttons[button_spec.key] = button
+
+    def _coerce_button_specs(self, buttons: Iterable[ButtonSpec | Mapping[str, Any]]) -> list[ButtonSpec]:
+        specs: list[ButtonSpec] = []
+        for item in buttons:
+            if isinstance(item, ButtonSpec):
+                specs.append(item)
+            else:
+                specs.append(
+                    ButtonSpec(
+                        text=str(item.get("text") or item.get("label") or "Acción"),
+                        command_key=item.get("command_key"),
+                        style=str(item.get("style") or "primary"),
+                        enabled=bool(item.get("enabled", True)),
+                    )
+                )
+        return specs
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def set_enabled(self, key: str, enabled: bool) -> None:
+        button = self.buttons.get(key)
+        if button is not None:
+            button.set_enabled(enabled)
+
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+        for button in self.buttons.values():
+            button.apply_visual_preferences(
+                font_config=self.font_config,
+                color_theme=color_theme,
+                surface_theme=surface_theme,
+                appearance_mode=appearance_mode,
+            )

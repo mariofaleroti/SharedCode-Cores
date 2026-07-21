@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ document.title }}</title>
+  <style>
+    :root {
+      --bg-a:#07111f; --bg-b:#0f172a; --panel:rgba(17,24,39,.88); --panel-2:rgba(31,41,55,.76);
+      --surface:rgba(255,255,255,.055); --surface-2:rgba(255,255,255,.09); --text:#e5e7eb; --strong:#fff;
+      --muted:#9ca3af; --border:rgba(148,163,184,.22); --accent:#38bdf8; --accent-2:#a78bfa;
+      --ok:#22c55e; --warning:#f59e0b; --critical:#ef4444; --info:#38bdf8; --shadow:rgba(0,0,0,.35);
+    }
+    html[data-theme="light"] {
+      --bg-a:#eef2ff; --bg-b:#f8fafc; --panel:rgba(255,255,255,.90); --panel-2:rgba(248,250,252,.94);
+      --surface:rgba(15,23,42,.045); --surface-2:rgba(15,23,42,.07); --text:#111827; --strong:#020617;
+      --muted:#64748b; --border:rgba(15,23,42,.12); --shadow:rgba(15,23,42,.10);
+    }
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at top left,rgba(56,189,248,.22),transparent 30rem),radial-gradient(circle at 90% 0,rgba(167,139,250,.16),transparent 28rem),linear-gradient(135deg,var(--bg-a),var(--bg-b));color:var(--text);font:14px/1.48 "Segoe UI",Inter,system-ui,Arial,sans-serif}.page{width:min(1360px,calc(100% - 36px));margin:0 auto;padding:28px 0 34px}.hero,.panel{background:var(--panel);border:1px solid var(--border);border-radius:24px;box-shadow:0 22px 58px var(--shadow);backdrop-filter:blur(16px)}.hero{padding:26px;margin-bottom:18px;overflow:hidden;position:relative}.hero:after{content:"";position:absolute;right:-130px;bottom:-170px;width:360px;height:360px;background:radial-gradient(circle,rgba(56,189,248,.18),transparent 65%);border-radius:999px}.hero-top{display:flex;justify-content:space-between;gap:18px;align-items:start;position:relative;z-index:1}.eyebrow{color:var(--accent);font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}h1,h2,h3{margin:0;color:var(--strong)}h1{font-size:clamp(30px,4vw,50px);letter-spacing:-.055em;line-height:1}h2{font-size:20px;letter-spacing:-.025em}.subtitle{color:var(--muted);max-width:880px;margin:12px 0 0}.badge,.chip,.tag{display:inline-flex;align-items:center;gap:7px;border-radius:999px;white-space:nowrap}.badge{padding:9px 14px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(56,189,248,.38);background:rgba(56,189,248,.13);color:var(--info)}.badge.ok{border-color:rgba(34,197,94,.42);background:rgba(34,197,94,.14);color:var(--ok)}.badge.warning{border-color:rgba(245,158,11,.42);background:rgba(245,158,11,.14);color:var(--warning)}.badge.critical{border-color:rgba(239,68,68,.44);background:rgba(239,68,68,.14);color:var(--critical)}.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px;position:relative;z-index:1}.chip{padding:7px 10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:750}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{min-height:100px;padding:15px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(180deg,var(--surface-2),var(--surface));overflow:hidden;position:relative}.metric:before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}.metric-label{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.055em;text-transform:uppercase}.metric-value{margin-top:8px;color:var(--strong);font-size:22px;font-weight:900;letter-spacing:-.035em;word-break:break-word}.panel{padding:20px;margin:18px 0}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.muted{color:var(--muted)}.brief{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.brief-card{border:1px solid var(--border);background:var(--surface);border-radius:16px;padding:14px}.brief-card ul{margin:10px 0 0;padding-left:18px;color:var(--muted)}.brief-card li+li{margin-top:6px}.table-wrap{width:100%;overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}th{position:sticky;top:0;background:var(--panel-2);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}tr:last-child td{border-bottom:0}tbody tr:hover td{background:var(--surface)}details.clean{border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:12px 14px}details.clean+details.clean{margin-top:10px}summary{cursor:pointer;font-weight:900;color:var(--strong)}.json-block{white-space:pre-wrap;word-break:break-word;background:rgba(2,6,23,.35);border:1px solid var(--border);border-radius:16px;padding:14px;color:var(--muted);overflow:auto;max-height:520px}.empty{border:1px dashed var(--border);background:var(--surface);border-radius:16px;padding:14px;color:var(--muted)}.footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:12px;margin-top:22px;padding:0 4px}@media(max-width:760px){.page{width:min(100% - 20px,1360px);padding-top:14px}.hero-top{display:grid}.panel-head{align-items:start;flex-direction:column}}@media print{body{background:#fff}.page{width:100%;padding:0}.hero,.panel{box-shadow:none;backdrop-filter:none;break-inside:avoid}}
+  </style>
+</head>
+<body>
+  {% set status_key = document.status | status_class %}
+  <main class="page">
+    <header class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">RenderCore · JSON Contract</div>
+          <h1>{{ document.title }}</h1>
+          <p class="subtitle">{{ document.subtitle }}</p>
+        </div>
+        <span class="badge {{ status_key }}">{{ document.status }}</span>
+      </div>
+      <div class="meta">
+        <span class="chip">Tipo: {{ document.report_type }}</span>
+        {% if meta.file_type %}<span class="chip">Archivo: {{ meta.file_type }}</span>{% endif %}
+        {% if meta.config_type %}<span class="chip">Config: {{ meta.config_type }}</span>{% endif %}
+        {% if meta.report_type %}<span class="chip">Reporte: {{ meta.report_type }}</span>{% endif %}
+        {% if meta.tool_name %}<span class="chip">Herramienta: {{ meta.tool_name }}</span>{% endif %}
+        {% if meta.module_name %}<span class="chip">Módulo: {{ meta.module_name }}</span>{% endif %}
+        {% if meta.schema_version %}<span class="chip">Schema: {{ meta.schema_version }}</span>{% endif %}
+        {% if meta.generated_at %}<span class="chip">Generado: {{ meta.generated_at }}</span>{% endif %}
+        {% if meta.updated_at %}<span class="chip">Actualizado: {{ meta.updated_at }}</span>{% endif %}
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Resumen ejecutivo</h2><span class="chip">{{ summary|length }} valores</span></div>
+      {% if summary %}
+        <div class="grid">
+          {% for key, value in summary.items() %}
+            <article class="metric"><div class="metric-label">{{ key }}</div><div class="metric-value">{{ value|render_value }}</div></article>
+          {% endfor %}
+        </div>
+      {% else %}<div class="empty">El documento no incluye valores de resumen.</div>{% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>Brief del reporte</h2></div>
+      <div class="brief">
+        <article class="brief-card"><h3>Hallazgos</h3>{% if report_brief.get('findings') %}<ul>{% for item in report_brief.get('findings') %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin hallazgos registrados.</p>{% endif %}</article>
+        <article class="brief-card"><h3>Recomendaciones</h3>{% if report_brief.get('recommendations') %}<ul>{% for item in report_brief.get('recommendations') %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin recomendaciones registradas.</p>{% endif %}</article>
+        <article class="brief-card"><h3>Notas técnicas</h3>{% if report_brief.get('technician_notes') %}<ul>{% for item in report_brief.get('technician_notes') %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="muted">Sin notas técnicas registradas.</p>{% endif %}</article>
+      </div>
+    </section>
+
+    {% if document.tables %}
+      <section class="panel">
+        <div class="panel-head"><h2>Tablas detectadas</h2><span class="chip">{{ document.tables|length }} tabla(s)</span></div>
+        {% for table in document.tables %}
+          <details class="clean" {% if loop.first %}open{% endif %}>
+            <summary>{{ table.title }} · {{ table.rows|length }} fila(s) · {{ table.source_path }}</summary>
+            <div class="table-wrap" style="margin-top:12px">
+              <table><thead><tr>{% for column in table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead><tbody>{% for row in table.rows[:200] %}<tr>{% for column in table.columns %}<td>{{ row.get(column,'')|render_value }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+            </div>
+            {% if table.rows|length > 200 %}<p class="muted">Vista limitada a 200 filas. Para datos completos use CSV/XLSX.</p>{% endif %}
+          </details>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <section class="panel">
+      <div class="panel-head"><h2>Diagnósticos y errores</h2></div>
+      {% if diagnostics or errors %}
+        {% if diagnostics %}<h3>Diagnósticos</h3><div class="json-block">{{ diagnostics|tojson(indent=2) }}</div>{% endif %}
+        {% if errors %}<h3 style="margin-top:12px">Errores</h3><div class="json-block">{{ errors|tojson(indent=2) }}</div>{% endif %}
+      {% else %}<div class="empty">Sin diagnósticos ni errores registrados.</div>{% endif %}
+    </section>
+
+    <section class="panel">
+      <details class="clean"><summary>Ver JSON crudo de data</summary><div class="json-block" style="margin-top:12px">{{ data|tojson(indent=2) }}</div></details>
+    </section>
+
+    <footer class="footer"><span>RenderCore · motor compartido neutral para contratos JSON</span><span>{{ meta.tool_name|default('SharedCode') }}</span></footer>
+  </main>
+</body>
+</html>

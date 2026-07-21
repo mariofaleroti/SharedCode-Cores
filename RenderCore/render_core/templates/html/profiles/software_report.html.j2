@@ -1,0 +1,288 @@
+{#
+    software_report.html.j2
+
+    Informe de software.
+
+    Version 2:
+    - Usa report_base.html.j2.
+    - Mantiene Resumen, Diagnosticos y Errores desde software_content.html.j2.
+    - Organiza el cuerpo del reporte en cajas visuales.
+    - Agrega busqueda visual para programas y actualizaciones.
+#}
+
+{% extends "report_base.html.j2" %}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% block report_page_title %}Reporte de Software - Toolkit IT{% endblock %}
+
+{% block report_title %}
+    {{ meta.tool_name | default("Toolkit IT") }} - Reporte de Software
+{% endblock %}
+
+{% block report_styles %}
+    .software-panel-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .software-wide-panel {
+        grid-column: 1 / -1;
+    }
+
+    .software-info-note {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .software-search-box {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .software-search-input {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--panel-bg);
+        color: var(--text-color);
+        padding: 0 12px;
+        font: inherit;
+    }
+
+    .software-search-input:focus {
+        outline: 2px solid rgba(37, 99, 235, 0.22);
+        border-color: rgba(37, 99, 235, 0.55);
+    }
+
+    .software-search-button {
+        min-height: 40px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: var(--soft-bg);
+        color: var(--text-color);
+        padding: 0 14px;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .software-search-button:hover {
+        background: var(--panel-bg);
+    }
+
+    .software-search-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .software-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        background: var(--soft-bg);
+        color: var(--text-muted);
+        padding: 6px 10px;
+        font-size: 0.86rem;
+    }
+
+    .software-collapsible {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .software-details-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        cursor: pointer;
+        list-style: none;
+        font-weight: 700;
+        color: var(--text-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .software-details-title::-webkit-details-marker {
+        display: none;
+    }
+
+
+    .software-details-title-text {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .software-details-count {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .software-details-body {
+        padding: 0;
+    }
+
+    .software-table-name {
+        min-width: 280px;
+    }
+
+    .software-table-version {
+        width: 180px;
+        white-space: nowrap;
+    }
+
+    .software-table-date {
+        width: 180px;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 900px) {
+        .software-panel-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .software-search-box {
+            grid-template-columns: 1fr;
+        }
+    }
+
+.software-top-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(260px, 1fr) minmax(360px, 1.25fr);
+    gap: 22px;
+    align-items: stretch;
+    margin-bottom: 22px;
+}
+
+<!-- Grid 3 columnas para sistema, lectura rapida y busqueda-->
+.software-layout-stack {
+    display: grid;
+    gap: 22px;
+}
+
+.software-top-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(360px, 1.25fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.software-list-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+}
+
+.software-search-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.software-search-box {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+}
+
+.software-search-input {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 1100px) {
+    .software-top-grid,
+    .software-list-grid {
+        grid-template-columns: 1fr;
+    }
+}
+<!-- Colapso interno se vea como un control secundario, no como caja importante como por ej Mostrar mas programas -->
+    .software-more-collapsible {
+    margin-top: 12px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.software-more-collapsible > .software-more-title {
+    width: fit-content;
+    margin-left: auto;
+    padding: 8px 12px;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    opacity: 0.72;
+}
+
+.software-more-collapsible > .software-more-title:hover {
+    color: var(--text-color);
+    opacity: 1;
+}
+
+.software-more-collapsible > .software-more-title::after {
+    width: 9px;
+    height: 9px;
+    margin-left: 8px;
+    border-right-width: 4px;
+    border-bottom-width: 4px;
+}
+
+.software-more-collapsible[open] > .software-more-title .software-more-label {
+    display: none;
+}
+
+.software-more-collapsible[open] > .software-more-title {
+    padding-top: 4px;
+    padding-bottom: 6px;
+}
+
+.software-more-body {
+    margin-top: 8px;
+}
+
+<!-- Durante la busqueda jace que desaparezcan los titulos -->
+#software-section.software-search-active .software-details-body thead {
+    display: none;
+}
+
+<!-- cuando hay busqueda activa oculta titulo, flehca mostra mas -->
+#software-section.software-search-active .software-more-collapsible {
+    margin-top: 0;
+}
+
+#software-section.software-search-active .software-more-collapsible > .software-more-title {
+    display: none;
+}
+
+#software-section.software-search-active .software-more-body {
+    margin-top: 0;
+}
+
+{% endblock %}
+
+
+
+{% block content %}
+{#
+    Incluye el contenido interno del reporte de software.
+
+    La estructura del documento queda en este archivo.
+    El cuerpo visual del reporte queda separado en report_sections.
+#}
+{% include "report_sections/software_content.html.j2" %}
+{% endblock %}

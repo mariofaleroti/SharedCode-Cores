@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "schema_version": "1.0.0",
+    "file_type": "config",
+    "config_type": "settings",
+    "tool_name": "ExampleTool",
+    "module_name": "SettingsManager"
+  },
+  "summary": {
+    "status": "ok",
+    "diagnostics_count": 0,
+    "errors_count": 0
+  },
+  "report_brief": {
+    "title": "Configuración de ejemplo",
+    "description": "Archivo de ejemplo válido para probar JsonContractCore."
+  },
+  "data": {
+    "settings": {}
+  },
+  "diagnostics": [],
+  "errors": []
+}

@@ -1,0 +1,526 @@
+{#
+    software_content.html.j2
+
+    Contenido interno del reporte de software.
+
+    Este archivo no hereda de ninguna plantilla base.
+    Este archivo no define titulo, encabezado ni pie de pagina.
+
+    Solo contiene el HTML interno que puede ser reutilizado por:
+    - software_report.html.j2
+    - full_report.html.j2
+#}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% set embedded_report = embedded_report | default(false) %}
+
+{% macro render_value(value) %}
+    {% if value is sameas true %}
+        Si
+    {% elif value is sameas false %}
+        No
+    {% elif value is none %}
+        N/A
+    {% elif value is mapping %}
+        {{ value | length }} campos
+    {% elif value is sequence and value is not string %}
+        {{ value | length }} items
+    {% else %}
+        {{ value }}
+    {% endif %}
+{% endmacro %}
+
+{% macro render_info_row(label, value) %}
+    <tr>
+        <th>{{ label }}</th>
+        <td>{{ render_value(value) }}</td>
+    </tr>
+{% endmacro %}
+
+{% macro render_program_table(programs, visible_limit=20) %}
+    {% if programs %}
+        {% set visible_programs = programs[:visible_limit] %}
+        {% set hidden_programs = programs[visible_limit:] %}
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="software-table-name">Nombre</th>
+                        <th class="software-table-version">Version</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for program in visible_programs %}
+                        {% if program is mapping %}
+                            {% set program_name = program.Name | default(program.name | default(program.DisplayName | default(program.display_name | default("N/A")))) %}
+                            {% set program_version = program.Version | default(program.version | default("N/A")) %}
+                        {% else %}
+                            {% set program_name = render_value(program) %}
+                            {% set program_version = "N/A" %}
+                        {% endif %}
+
+                        <tr data-software-search-row data-section="programs" data-search="{{ (program_name ~ ' ' ~ program_version) | lower | e }}">
+                            <td>{{ program_name }}</td>
+                            <td>{{ program_version }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if hidden_programs %}
+            <details class="tk-collapsible software-more-collapsible">
+                <summary class="tk-collapsible-title software-more-title">
+                <span class="software-more-label">Mostrar mas programas</span>
+                </summary>
+
+                <div class="software-more-body">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="software-table-name">Nombre</th>
+                                    <th class="software-table-version">Version</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for program in hidden_programs %}
+                                    {% if program is mapping %}
+                                        {% set program_name = program.Name | default(program.name | default(program.DisplayName | default(program.display_name | default("N/A")))) %}
+                                        {% set program_version = program.Version | default(program.version | default("N/A")) %}
+                                    {% else %}
+                                        {% set program_name = render_value(program) %}
+                                        {% set program_version = "N/A" %}
+                                    {% endif %}
+
+                                    <tr data-software-search-row data-section="programs" data-search="{{ (program_name ~ ' ' ~ program_version) | lower | e }}">
+                                        <td>{{ program_name }}</td>
+                                        <td>{{ program_version }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+        {% endif %}
+
+        <p class="empty-message" data-software-empty="programs" hidden>No hay coincidencias en programas.</p>
+    {% else %}
+        <p class="empty-message">No se encontraron programas instalados.</p>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_hotfix_table(hotfixes, visible_limit=20) %}
+    {% if hotfixes %}
+        {% set visible_hotfixes = hotfixes[:visible_limit] %}
+        {% set hidden_hotfixes = hotfixes[visible_limit:] %}
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>HotFix ID</th>
+                        <th>Instalado en</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for hotfix in visible_hotfixes %}
+                        {% if hotfix is mapping %}
+                            {% set hotfix_id = hotfix.HotFixID | default(hotfix.HotFixId | default(hotfix.hotfix_id | default(hotfix.id | default("N/A")))) %}
+                            {% set installed_on = hotfix.InstalledOn | default(hotfix.installed_on | default(hotfix.InstalledDate | default(hotfix.installed_date | default("N/A")))) %}
+                        {% else %}
+                            {% set hotfix_id = render_value(hotfix) %}
+                            {% set installed_on = "N/A" %}
+                        {% endif %}
+
+                        <tr data-software-search-row data-section="hotfixes" data-search="{{ (hotfix_id ~ ' ' ~ installed_on) | lower | e }}">
+                            <td>{{ hotfix_id }}</td>
+                            <td>{{ installed_on }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if hidden_hotfixes %}
+            <details class="tk-collapsible software-more-collapsible">
+                <summary class="tk-collapsible-title software-more-title">
+                <span class="software-more-label">Mostrar mas actualizaciones</span>
+                </summary>
+
+                <div class="software-more-body">
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>HotFix ID</th>
+                                    <th>Instalado en</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for hotfix in hidden_hotfixes %}
+                                    {% if hotfix is mapping %}
+                                        {% set hotfix_id = hotfix.HotFixID | default(hotfix.HotFixId | default(hotfix.hotfix_id | default(hotfix.id | default("N/A")))) %}
+                                        {% set installed_on = hotfix.InstalledOn | default(hotfix.installed_on | default(hotfix.InstalledDate | default(hotfix.installed_date | default("N/A")))) %}
+                                    {% else %}
+                                        {% set hotfix_id = render_value(hotfix) %}
+                                        {% set installed_on = "N/A" %}
+                                    {% endif %}
+
+                                    <tr data-software-search-row data-section="hotfixes" data-search="{{ (hotfix_id ~ ' ' ~ installed_on) | lower | e }}">
+                                        <td>{{ hotfix_id }}</td>
+                                        <td>{{ installed_on }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+        {% endif %}
+
+        <p class="empty-message" data-software-empty="hotfixes" hidden>No hay coincidencias en actualizaciones.</p>
+    {% else %}
+        <p class="empty-message">No se encontraron actualizaciones instaladas.</p>
+    {% endif %}
+{% endmacro %}
+
+{% if not embedded_report %}
+
+<div class="overview-grid">
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+            </svg>
+            Resumen
+        </h2>
+
+        <div class="summary-card-grid">
+            {% set status_value = summary.status | default("N/A") %}
+
+            {% call summary_card.render_summary_card("Estado", status_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6 9 17l-5-5"></path>
+                </svg>
+            {% endcall %}
+
+            {% set apps_value = summary.installed_program_count | default(summary.program_count | default(summary.software_count | default("N/A"))) %}
+
+            {% call summary_card.render_summary_card("Programas", apps_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                    <path d="M8 8h8"></path>
+                    <path d="M8 12h8"></path>
+                    <path d="M8 16h5"></path>
+                </svg>
+            {% endcall %}
+
+            {% set sections_value = data | length if data else 0 %}
+
+            {% call summary_card.render_summary_card("Secciones", sections_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
+            {% endcall %}
+
+            {% set warnings_value = summary.warnings_count | default(0) %}
+
+            {% call summary_card.render_summary_card("Avisos", warnings_value, "warning") %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                </svg>
+            {% endcall %}
+
+            {% set critical_value = summary.critical_count | default(0) %}
+
+            {% call summary_card.render_summary_card("Criticos", critical_value, "critical") %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M15 9 9 15"></path>
+                    <path d="M9 9l6 6"></path>
+                </svg>
+            {% endcall %}
+        </div>
+
+        <div class="summary-meta-line">
+            <span>Tipo: {{ meta.report_type | default("software") }}</span>
+            <span>Generado: {{ data.CollectedAt | default(meta.generated_at | default("N/A")) }}</span>
+        </div>
+    </section>
+
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+                <path d="M12 9v4"></path>
+                <path d="M12 17h.01"></path>
+            </svg>
+            Diagnosticos
+        </h2>
+
+        {% include "components/diagnostics.html.j2" %}
+    </section>
+</div>
+
+{% include "components/errors.html.j2" %}
+
+{% endif %}
+
+<section class="section" id="software-section">
+    <h2 class="section-title">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 8h8"></path>
+            <path d="M8 12h8"></path>
+            <path d="M8 16h5"></path>
+        </svg>
+        Software
+    </h2>
+
+    {% if data %}
+        {% set os_info = data.OperatingSystem | default(data.operating_system | default({})) %}
+        {% set programs = data.InstalledPrograms | default(data.installed_programs | default(data.programs | default([]))) %}
+        {% set hotfixes = data.HotFixes | default(data.hotfixes | default([])) %}
+        {% set collected_at = data.CollectedAt | default(data.collected_at | default(meta.generated_at | default("N/A"))) %}
+        {% set program_count = summary.installed_program_count | default(programs | length) %}
+        {% set hotfix_count = summary.hotfix_count | default(hotfixes | length) %}
+
+       <div class="software-layout-stack">
+    <div class="software-top-grid">
+        <div class="detail-panel">
+            <h3 class="detail-panel-title">Sistema operativo</h3>
+
+            <table class="detail-table">
+                <tbody>
+                    {{ render_info_row("Nombre", os_info.Name | default(os_info.name | default(summary.os_name | default("N/A")))) }}
+                    {{ render_info_row("Version", os_info.Version | default(os_info.version | default(summary.os_version | default("N/A")))) }}
+                    {{ render_info_row("Compilacion", os_info.BuildNumber | default(os_info.build_number | default(summary.os_build_number | default("N/A")))) }}
+                    {{ render_info_row("Arquitectura", os_info.Architecture | default(os_info.architecture | default("N/A"))) }}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-panel">
+            <h3 class="detail-panel-title">Lectura rapida</h3>
+
+            <table class="detail-table">
+                <tbody>
+                    {{ render_info_row("Recolectado", collected_at) }}
+                    {{ render_info_row("Programas", program_count) }}
+                    {{ render_info_row("Actualizaciones", hotfix_count) }}
+                    {{ render_info_row("Estado", summary.status | default("N/A")) }}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-panel software-search-panel">
+            <h3 class="detail-panel-title">Busqueda rapida</h3>
+
+            <div class="software-search-box">
+                <input
+                    class="software-search-input"
+                    type="search"
+                    placeholder="Buscar por nombre, version, HotFix ID o fecha"
+                    aria-label="Buscar software"
+                    data-software-search-input
+                >
+                <button class="software-search-button" type="button" data-software-search-clear>Limpiar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="software-list-grid">
+        <details class="tk-collapsible software-collapsible" data-software-details="programs" open>
+            <summary class="tk-collapsible-title software-details-title">
+                <span class="software-details-title-text">Programas instalados</span>
+            </summary>
+
+            <div class="software-details-body">
+                {{ render_program_table(programs) }}
+            </div>
+        </details>
+
+        <details class="tk-collapsible software-collapsible" data-software-details="hotfixes" open>
+            <summary class="tk-collapsible-title software-details-title">
+                <span class="software-details-title-text">Actualizaciones instaladas</span>
+            </summary>
+
+            <div class="software-details-body">
+                {{ render_hotfix_table(hotfixes) }}
+            </div>
+        </details>
+    </div>
+    </div>
+    {% else %}
+        <p class="empty-message">No se encontraron datos de software.</p>
+    {% endif %}
+</section>
+
+<script>
+(function () {
+    function getNormalizedText(value) {
+        return (value || "").toString().toLowerCase();
+    }
+
+    function updateSoftwareCount(section, sectionName, count) {
+        const counter = section.querySelector('[data-software-count="' + sectionName + '"]');
+
+        if (counter) {
+            counter.textContent = count.toString();
+        }
+    }
+
+    function updateEmptyMessage(section, sectionName, count, filterText) {
+        const message = section.querySelector('[data-software-empty="' + sectionName + '"]');
+
+        if (message) {
+            message.hidden = !filterText || count > 0;
+        }
+    }
+
+    function updateSoftwareDetails(section, sectionName, count, filterText) {
+    const details = section.querySelector('[data-software-details="' + sectionName + '"]');
+
+    if (details && filterText) {
+        details.open = true;
+    }
+}
+
+    function hasVisibleSearchRow(container) {
+    const rows = container.querySelectorAll("[data-software-search-row]");
+
+    return Array.from(rows).some(function (row) {
+        return !row.hidden;
+    });
+}
+
+function updateSoftwareTableWraps(section, filterText) {
+    const tableWraps = section.querySelectorAll(".software-details-body .table-wrap");
+
+    tableWraps.forEach(function (tableWrap) {
+        if (!filterText) {
+            tableWrap.hidden = false;
+            return;
+        }
+
+        tableWrap.hidden = !hasVisibleSearchRow(tableWrap);
+    });
+}
+
+function updateSoftwareMoreCollapsibles(section, filterText) {
+    const collapsibles = section.querySelectorAll(".software-more-collapsible");
+
+    collapsibles.forEach(function (collapsible) {
+        if (!filterText) {
+            collapsible.hidden = false;
+            collapsible.open = false;
+            return;
+        }
+
+        const hasMatches = hasVisibleSearchRow(collapsible);
+
+        collapsible.hidden = !hasMatches;
+        collapsible.open = hasMatches;
+    });
+}
+
+    function updateSoftwareSearch() {
+        const section = document.getElementById("software-section");
+
+        if (!section) {
+            return;
+        }
+
+        const input = section.querySelector("[data-software-search-input]");
+
+        if (!input) {
+            return;
+        }
+
+        const filterText = getNormalizedText(input.value).trim();
+        section.classList.toggle("software-search-active", Boolean(filterText));
+        const rows = section.querySelectorAll("[data-software-search-row]");
+        let programCount = 0;
+        let hotfixCount = 0;
+
+        rows.forEach(function (row) {
+            const rowText = getNormalizedText(row.getAttribute("data-search"));
+            const rowSection = row.getAttribute("data-section");
+            const isVisible = !filterText || rowText.indexOf(filterText) !== -1;
+
+            row.hidden = !isVisible;
+
+            if (isVisible && rowSection === "programs") {
+                programCount += 1;
+            }
+
+            if (isVisible && rowSection === "hotfixes") {
+                hotfixCount += 1;
+            }
+        });
+
+        updateSoftwareCount(section, "programs", programCount);
+        updateSoftwareCount(section, "hotfixes", hotfixCount);
+        updateEmptyMessage(section, "programs", programCount, filterText);
+        updateEmptyMessage(section, "hotfixes", hotfixCount, filterText);
+        updateSoftwareDetails(section, "programs", programCount, filterText);
+        updateSoftwareDetails(section, "hotfixes", hotfixCount, filterText);
+        updateSoftwareTableWraps(section, filterText);
+        updateSoftwareMoreCollapsibles(section, filterText);
+    }
+
+    function clearSoftwareSearch() {
+        const section = document.getElementById("software-section");
+
+        if (!section) {
+            return;
+        }
+
+        const input = section.querySelector("[data-software-search-input]");
+
+        if (!input) {
+            return;
+        }
+
+        input.value = "";
+        updateSoftwareSearch();
+        input.focus();
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const section = document.getElementById("software-section");
+
+        if (!section) {
+            return;
+        }
+
+        const input = section.querySelector("[data-software-search-input]");
+        const clearButton = section.querySelector("[data-software-search-clear]");
+
+        if (input) {
+            input.addEventListener("input", updateSoftwareSearch);
+        }
+
+        if (clearButton) {
+            clearButton.addEventListener("click", clearSoftwareSearch);
+        }
+
+        updateSoftwareSearch();
+    });
+}());
+</script>

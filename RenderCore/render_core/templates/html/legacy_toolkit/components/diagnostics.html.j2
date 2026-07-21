@@ -1,0 +1,79 @@
+{#
+    components/diagnostics.html.j2
+
+    Componente reutilizable para mostrar la tabla de diagnostics.
+
+    Variables esperadas:
+    - diagnostics
+
+    Este archivo no crea la seccion completa.
+    Solo dibuja el contenido interno:
+    - tabla si hay diagnostics
+    - mensaje vacio si no hay diagnostics
+#}
+
+{% if diagnostics %}
+    <div class="table-wrap">
+        <table class="diagnostics-table">
+            <thead>
+                <tr>
+                    <th>Severidad</th>
+                    <th>Categoria</th>
+                    <th>Mensaje</th>
+                    <th>Detalle</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in diagnostics %}
+                    <tr>
+                        <td>
+                            <span class="status-badge status-{{ item.severity | default("info") | lower }}">
+                                {% if item.severity == "Warning" %}
+                                    Advertencia
+                                {% elif item.severity == "Critical" %}
+                                    Critico
+                                {% else %}
+                                    {{ item.severity | default("Info") }}
+                                {% endif %}
+                            </span>
+                        </td>
+
+                        <td>{{ item.category | default("General") }}</td>
+
+                        <td class="diagnostic-message">
+                            {% if item.target_id %}
+                                <a href="#{{ item.target_id }}">{{ item.message | default("No message") }}</a>
+                            {% else %}
+                                {{ item.message | default("No message") }}
+                            {% endif %}
+                        </td>
+
+                        <td class="diagnostic-details">
+                            {{ item.details | default("N/A") }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    {% if meta.report_type | default("") == "disk_smart" %}
+    <div class="diagnostic-ok-box">
+        <span class="status-badge status-ok">OK</span>
+
+        <div>
+            <div class="diagnostic-ok-title">
+                Resultado SMART sin alertas
+            </div>
+
+            <div class="diagnostic-ok-detail">
+                No se detectaron advertencias ni estados criticos en los discos analizados.
+                Discos OK: {{ summary.ok_count | default(0) }} de {{ summary.disk_count | default(0) }}.
+            </div>
+        </div>
+    </div>
+{% else %}
+    <p class="empty-message">No se detectaron diagnosticos para mostrar.</p>
+{% endif %}
+{% endif %}

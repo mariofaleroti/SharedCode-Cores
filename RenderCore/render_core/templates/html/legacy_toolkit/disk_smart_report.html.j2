@@ -1,0 +1,182 @@
+{#
+    disk_smart_report.html.j2
+
+    Wrapper del reporte individual de Smart Disk.
+
+    Este archivo:
+    - hereda de report_base.html.j2
+    - define titulo, icono y estilos propios
+    - incluye el contenido interno desde report_sections
+#}
+
+{% extends "report_base.html.j2" %}
+
+{% block report_page_title %}Smart Disk Report - Toolkit IT{% endblock %}
+
+{% block report_styles %}
+    .smart-disk-stack {
+        display: grid;
+        gap: 12px;
+    }
+
+    .smart-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .smart-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .smart-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid var(--border-light);
+        background: var(--bg-soft);
+        color: var(--text-main);
+    }
+
+    .smart-chip.ok {
+        background: var(--ok-bg);
+        color: var(--ok-text);
+        border-color: #bbf7d0;
+    }
+
+    .smart-chip.warning {
+        background: var(--warning-bg);
+        color: var(--warning-text);
+        border-color: #fde68a;
+    }
+
+    .smart-chip.critical {
+        background: var(--critical-bg);
+        color: var(--critical-text);
+        border-color: #fecaca;
+    }
+
+    .smart-note-list {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+    .smart-note-list li {
+        margin: 4px 0;
+    }
+
+    .smart-subtitle {
+        margin: 0 0 10px;
+        font-size: 15px;
+        font-weight: 750;
+        color: var(--text-main);
+    }
+
+    .smart-muted {
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+        .smart-detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .smartctl-status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 10px;
+    font-size: 11px;
+}
+
+.smartctl-status-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.smartctl-ok {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.smartctl-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.smartctl-path-details {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.smartctl-path-details summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.smartctl-path-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.smartctl-path-details code {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 3px 7px;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 10px;
+}
+
+.smart-disk-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+@media (max-width: 1000px) {
+    .smart-disk-panel-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.smart-detail-grid,
+.smart-disk-stack .detail-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+@media (max-width: 1100px) {
+    .smart-detail-grid,
+    .smart-disk-stack .detail-panel-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+{% endblock %}
+
+{% block report_icon %}
+   
+{% endblock %}
+
+{% block report_title %}Toolkit IT - Smart Disk Report{% endblock %}
+
+{% block content %}
+    {% include "report_sections/disk_smart_content.html.j2" %}
+{% endblock %}

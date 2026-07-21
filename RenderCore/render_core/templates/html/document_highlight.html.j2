@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="es" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ document.title }}</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --surface: #111b2d;
+      --surface-2: #17243a;
+      --surface-3: #1d2d46;
+      --border: #2b3e5c;
+      --text: #e8eef8;
+      --muted: #9fb0c7;
+      --accent: #2d8bd0;
+      --accent-2: #66b7ed;
+      --mark: #ffd54a;
+      --mark-text: #181300;
+      --danger: #ef6a75;
+      --ok: #67d391;
+      --shadow: 0 16px 44px rgba(0, 0, 0, .24);
+    }
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #eef3f9;
+      --surface: #ffffff;
+      --surface-2: #f7f9fc;
+      --surface-3: #e8eef7;
+      --border: #ced9e7;
+      --text: #152238;
+      --muted: #60718a;
+      --accent: #1874b8;
+      --accent-2: #0f5e96;
+      --mark: #ffe27a;
+      --mark-text: #211b00;
+      --shadow: 0 14px 36px rgba(45, 69, 98, .13);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    button, a { font: inherit; }
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(248px, 300px) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 18px;
+      border-right: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface), #0d1728);
+    }
+    html[data-theme="light"] .sidebar { background: var(--surface); }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .brand-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(145deg, var(--accent), #185889);
+      box-shadow: var(--shadow);
+    }
+    .brand strong { display: block; font-size: 15px; }
+    .brand small { color: var(--muted); }
+    .panel {
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface-2);
+    }
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .metric {
+      padding: 9px;
+      border-radius: 10px;
+      background: var(--surface-3);
+    }
+    .metric b { display: block; font-size: 18px; }
+    .metric span { color: var(--muted); font-size: 11px; }
+    .term-list { display: grid; gap: 7px; }
+    .term-button, .all-button {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      color: var(--text);
+      background: var(--surface-3);
+      cursor: pointer;
+      text-align: left;
+    }
+    .term-button:hover, .all-button:hover,
+    .term-button.active, .all-button.active {
+      border-color: var(--accent-2);
+      background: color-mix(in srgb, var(--accent) 24%, var(--surface-3));
+    }
+    .term-count {
+      min-width: 28px;
+      text-align: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      color: white;
+      background: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .source-path {
+      display: block;
+      word-break: break-all;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .source-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: white;
+      text-decoration: none;
+      background: var(--accent);
+    }
+    .main { min-width: 0; }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(14px);
+    }
+    .title-wrap { min-width: 0; }
+    .title-wrap h1 {
+      margin: 0;
+      font-size: clamp(19px, 2vw, 26px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title-wrap p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-controls button {
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 7px 11px;
+      color: var(--text);
+      background: var(--surface-2);
+      cursor: pointer;
+    }
+    .nav-controls button:hover { border-color: var(--accent-2); }
+    .nav-status {
+      min-width: 92px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .document-wrap {
+      width: min(1180px, calc(100% - 40px));
+      margin: 22px auto 64px;
+    }
+    .notice {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border: 1px solid #9a7a18;
+      border-radius: 12px;
+      background: rgba(197, 147, 20, .14);
+      color: #ffe49a;
+    }
+    html[data-theme="light"] .notice { color: #6d5200; }
+    .document-section {
+      scroll-margin-top: 84px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .section-header {
+      position: sticky;
+      top: 70px;
+      z-index: 8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .section-header h2 { margin: 0; font-size: 15px; }
+    .section-header span { color: var(--muted); font-size: 11px; }
+    .section-body { padding: 16px 18px; }
+    .text-line, .paragraph {
+      position: relative;
+      margin: 0;
+      padding: 3px 8px 3px 58px;
+      border-radius: 7px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .paragraph { padding-left: 8px; margin-bottom: 9px; }
+    .text-line:hover { background: var(--surface-2); }
+    .line-number {
+      position: absolute;
+      left: 8px;
+      width: 38px;
+      text-align: right;
+      user-select: none;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .table-scroll { overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 620px; }
+    th, td {
+      padding: 8px 10px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--surface-3);
+      color: var(--muted);
+      font-size: 11px;
+      text-align: left;
+    }
+    td:first-child, th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      width: 64px;
+      text-align: right;
+      color: var(--muted);
+      background: var(--surface-2);
+    }
+    mark.sf-match {
+      scroll-margin-top: 130px;
+      padding: 1px 3px;
+      border-radius: 4px;
+      background: var(--mark);
+      color: var(--mark-text);
+      font-weight: 750;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.14);
+    }
+    mark.sf-match.current {
+      outline: 3px solid var(--accent-2);
+      outline-offset: 2px;
+    }
+    mark.sf-match.dimmed { opacity: .25; }
+    .empty {
+      padding: 32px;
+      text-align: center;
+      color: var(--muted);
+    }
+    @media (max-width: 900px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+      .toolbar { top: 0; grid-template-columns: 1fr; }
+      .nav-controls { justify-content: space-between; }
+      .document-wrap { width: min(100% - 20px, 1180px); }
+      .section-header { top: 112px; }
+    }
+  </style>
+</head>
+<body>
+{% set view = data.get('document', {}) %}
+{% set highlight = data.get('highlight', {}) %}
+{% set terms = highlight.get('terms', []) %}
+{% set sections = view.get('sections', []) %}
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">SF</div>
+        <div><strong>Smart Filter</strong><small>Visor destacado · RenderCore</small></div>
+      </div>
+
+      <section class="panel">
+        <h2>Resumen</h2>
+        <div class="metric-grid">
+          <div class="metric"><b id="metricMatches">0</b><span>coincidencias</span></div>
+          <div class="metric"><b>{{ terms | length }}</b><span>términos</span></div>
+          <div class="metric"><b>{{ sections | length }}</b><span>secciones</span></div>
+          <div class="metric"><b>{{ view.get('format', '') | upper }}</b><span>formato</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Términos encontrados</h2>
+        <div class="term-list" id="termList">
+          <button type="button" class="all-button active" data-filter-term="">Mostrar todas <span class="term-count" id="allTermCount">0</span></button>
+          {% for item in terms %}
+          <button type="button" class="term-button" data-filter-term="{{ item.get('text', '') | e }}">
+            <span>{{ item.get('text', '') }}</span><span class="term-count" data-term-count="{{ item.get('text', '') | e }}">0</span>
+          </button>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Archivo original</h2>
+        <strong>{{ view.get('title', document.title) }}</strong>
+        <span class="source-path">{{ view.get('source_path', '') }}</span>
+        {% if view.get('source_uri') %}<a class="source-link" href="{{ view.get('source_uri') }}">Abrir original</a>{% endif %}
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="toolbar">
+        <div class="title-wrap">
+          <h1>{{ view.get('title', document.title) }}</h1>
+          <p>{{ report_brief.get('subtitle', '') }}{% if view.get('reader') %} · {{ view.get('reader') }}{% endif %}</p>
+        </div>
+        <div class="nav-controls">
+          <button type="button" id="previousMatch">← Anterior</button>
+          <span class="nav-status" id="matchStatus">0 de 0</span>
+          <button type="button" id="nextMatch">Siguiente →</button>
+        </div>
+      </header>
+
+      <div class="document-wrap">
+        {% if view.get('truncated') %}<div class="notice">La vista fue limitada por seguridad. El archivo original no fue modificado.</div>{% endif %}
+        {% if sections %}
+          {% for section in sections %}
+          <section class="document-section" id="{{ section.get('id', 'section-' ~ loop.index) | e }}">
+            <div class="section-header">
+              <h2>{{ section.get('label', 'Sección ' ~ loop.index) }}</h2>
+              <span>{{ section.get('kind', 'contenido') }}</span>
+            </div>
+            <div class="section-body" data-highlight-scope>
+              {% for block in section.get('blocks', []) %}
+                {% if block.get('type') == 'table' %}
+                <div class="table-scroll" data-location="{{ block.get('location_label', section.get('label', 'Tabla')) | e }}">
+                  <table>
+                    {% set rows = block.get('rows', []) %}
+                    {% set max_columns = block.get('max_columns', 0) %}
+                    <thead><tr><th>#</th>{% for column_index in range(max_columns) %}<th>{{ block.get('headers', [])[column_index] if column_index < block.get('headers', []) | length else 'Columna ' ~ (column_index + 1) }}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                    {% for row in rows %}
+                      <tr data-location="{{ row.get('location_label', section.get('label', '') ~ ' · Fila ' ~ row.get('number', loop.index)) | e }}">
+                        <td>{{ row.get('number', loop.index) }}</td>
+                        {% for column_index in range(max_columns) %}<td>{{ row.get('cells', [])[column_index] if column_index < row.get('cells', []) | length else '' }}</td>{% endfor %}
+                      </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% elif block.get('type') == 'paragraph' %}
+                <p class="paragraph" data-location="{{ block.get('location_label', section.get('label', '')) | e }}">{{ block.get('text', '') }}</p>
+                {% else %}
+                <p class="text-line" data-location="{{ block.get('location_label', 'Línea ' ~ block.get('line_number', loop.index)) | e }}"><span class="line-number">{{ block.get('line_number', loop.index) }}</span>{{ block.get('text', '') }}</p>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </section>
+          {% endfor %}
+        {% else %}
+          <div class="document-section empty">No hay contenido estructurado disponible para este archivo.</div>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const sourceTerms = {{ terms | map(attribute='text') | list | tojson }}.filter(Boolean);
+      const accentMap = {
+        a: '[aáàäâãå]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöôõ]', u: '[uúùüû]',
+        n: '[nñ]', c: '[cç]'
+      };
+      const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+      const patternFor = term => Array.from(String(term || '')).map(char => {
+        const lower = char.toLowerCase();
+        if (accentMap[lower]) return accentMap[lower];
+        if (/\s/.test(char)) return '\\s+';
+        return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }).join('');
+      const terms = [...sourceTerms].sort((a, b) => b.length - a.length);
+      const normalizedTermMap = new Map(terms.map(term => [normalize(term), term]));
+      const regex = terms.length ? new RegExp(terms.map(patternFor).map(p => `(${p})`).join('|'), 'giu') : null;
+      const scopes = [...document.querySelectorAll('[data-highlight-scope]')];
+
+      if (regex) {
+        for (const scope of scopes) {
+          const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
+            acceptNode(node) {
+              if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+              if (node.parentElement && node.parentElement.closest('mark,script,style,button')) return NodeFilter.FILTER_REJECT;
+              return NodeFilter.FILTER_ACCEPT;
+            }
+          });
+          const nodes = [];
+          while (walker.nextNode()) nodes.push(walker.currentNode);
+          for (const node of nodes) {
+            const text = node.nodeValue;
+            regex.lastIndex = 0;
+            let match;
+            let cursor = 0;
+            let changed = false;
+            const fragment = document.createDocumentFragment();
+            while ((match = regex.exec(text)) !== null) {
+              changed = true;
+              if (match.index > cursor) fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+              const mark = document.createElement('mark');
+              mark.className = 'sf-match';
+              mark.textContent = match[0];
+              mark.dataset.term = normalizedTermMap.get(normalize(match[0])) || match[0];
+              const locationOwner = node.parentElement ? node.parentElement.closest('[data-location]') : null;
+              mark.dataset.location = locationOwner ? locationOwner.dataset.location || '' : '';
+              fragment.append(mark);
+              cursor = match.index + match[0].length;
+              if (match[0].length === 0) regex.lastIndex += 1;
+            }
+            if (changed) {
+              if (cursor < text.length) fragment.append(document.createTextNode(text.slice(cursor)));
+              node.parentNode.replaceChild(fragment, node);
+            }
+          }
+        }
+      }
+
+      const marks = [...document.querySelectorAll('mark.sf-match')];
+      marks.forEach((mark, index) => { mark.id = `sf-match-${index + 1}`; mark.dataset.matchIndex = String(index); });
+      const counts = new Map();
+      for (const mark of marks) counts.set(normalize(mark.dataset.term), (counts.get(normalize(mark.dataset.term)) || 0) + 1);
+      document.getElementById('metricMatches').textContent = String(marks.length);
+      document.getElementById('allTermCount').textContent = String(marks.length);
+      document.querySelectorAll('[data-term-count]').forEach(node => {
+        node.textContent = String(counts.get(normalize(node.dataset.termCount)) || 0);
+      });
+
+      let activeTerm = '';
+      let visibleMarks = marks;
+      let currentIndex = marks.length ? 0 : -1;
+      const status = document.getElementById('matchStatus');
+
+      function refreshVisibleMarks() {
+        const normalizedActive = normalize(activeTerm);
+        visibleMarks = normalizedActive ? marks.filter(mark => normalize(mark.dataset.term) === normalizedActive) : marks;
+        marks.forEach(mark => mark.classList.toggle('dimmed', Boolean(normalizedActive) && normalize(mark.dataset.term) !== normalizedActive));
+        currentIndex = visibleMarks.length ? 0 : -1;
+        updateStatus();
+      }
+      function updateStatus() {
+        marks.forEach(mark => mark.classList.remove('current'));
+        if (currentIndex >= 0 && visibleMarks[currentIndex]) visibleMarks[currentIndex].classList.add('current');
+        status.textContent = visibleMarks.length ? `${currentIndex + 1} de ${visibleMarks.length}` : '0 de 0';
+      }
+      function goTo(index) {
+        if (!visibleMarks.length) return;
+        currentIndex = (index + visibleMarks.length) % visibleMarks.length;
+        updateStatus();
+        visibleMarks[currentIndex].scrollIntoView({behavior: 'smooth', block: 'center'});
+      }
+      document.getElementById('previousMatch').addEventListener('click', () => goTo(currentIndex - 1));
+      document.getElementById('nextMatch').addEventListener('click', () => goTo(currentIndex + 1));
+      document.querySelectorAll('[data-filter-term]').forEach(button => {
+        button.addEventListener('click', () => {
+          activeTerm = button.dataset.filterTerm || '';
+          document.querySelectorAll('[data-filter-term]').forEach(item => item.classList.toggle('active', item === button));
+          refreshVisibleMarks();
+          goTo(0);
+        });
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'ArrowRight' || event.key === 'F3') { event.preventDefault(); goTo(currentIndex + 1); }
+        if (event.key === 'ArrowLeft' || (event.shiftKey && event.key === 'F3')) { event.preventDefault(); goTo(currentIndex - 1); }
+      });
+      updateStatus();
+      if (marks.length) setTimeout(() => goTo(0), 180);
+    })();
+  </script>
+</body>
+</html>

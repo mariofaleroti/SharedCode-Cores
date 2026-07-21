@@ -1,0 +1,555 @@
+{#
+    disk_smart_content.html.j2
+
+    Contenido interno del reporte de Smart Disk.
+
+    Este archivo no define:
+    - base HTML
+    - titulo de pagina
+    - encabezado
+    - footer
+    - estilos propios del wrapper
+
+    Solo contiene el cuerpo visual del reporte:
+    - resumen
+    - diagnosticos
+    - errores
+    - tabla general de discos
+    - detalle por disco
+#}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% set smartctl_available = data.smartctl.available | default(false) %}
+{% set disk_count = summary.disk_count | default(0) %}
+{% set detected_entry_count = summary.detected_entry_count | default(disk_count) %}
+{% set duplicated_entries_removed = summary.duplicated_entries_removed | default(0) %}
+{% set limited_count = summary.limited_count | default(0) %}
+{% set warnings_count = summary.warnings_count | default(0) %}
+{% set critical_count = summary.critical_count | default(0) %}
+{% set alert_count = limited_count + warnings_count + critical_count %}
+
+
+{% macro smart_raw(attribute, default_text="No reportado") -%}
+    {%- if attribute and attribute.raw is not none -%}
+        {{ attribute.raw }}
+    {%- elif attribute and attribute.raw_text -%}
+        {{ attribute.raw_text }}
+    {%- else -%}
+        {{ default_text }}
+    {%- endif -%}
+{%- endmacro %}
+
+
+<div class="overview-grid">
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+            </svg>
+            Resumen
+        </h2>
+
+        <div class="summary-card-grid">
+            {% call summary_card.render_summary_card("Discos", disk_count) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="6" rx="7" ry="3"></ellipse>
+                    <path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"></path>
+                </svg>
+            {% endcall %}
+
+            {% call summary_card.render_summary_card("OK", summary.ok_count | default(0)) %}
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6 9 17l-5-5"></path>
+            </svg>
+            {% endcall %}
+
+            {% call summary_card.render_summary_card("Alertas", alert_count, "warning" if alert_count > 0 else "") %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                </svg>
+            {% endcall %}
+
+            {% call summary_card.render_summary_card("Criticos", summary.critical_count | default(0), "critical") %}
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 8v5"></path>
+            <path d="M12 16h.01"></path>
+            </svg>
+            {% endcall %}
+
+            {% set temperature_value = summary.max_temperature_c ~ " C" if summary.max_temperature_c is not none else "N/A" %}
+            {% call summary_card.render_summary_card("Temp max", temperature_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0z"></path>
+                </svg>
+            {% endcall %}
+
+    
+        </div>
+
+        <div class="summary-meta-line">
+            <span>Modulo: {{ meta.module_name | default("N/A") }}</span>
+            <span>Entradas unificadas: {{ duplicated_entries_removed }}</span>
+            <span>Fuente: {{ meta.source | default("N/A") }}</span>
+        </div>
+    </section>
+
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 9v4"></path>
+                <path d="M12 17h.01"></path>
+                <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+            </svg>
+            Diagnosticos
+        </h2>
+
+        {% include "components/diagnostics.html.j2" %}
+    </section>
+</div>
+
+{% include "components/errors.html.j2" %}
+
+<details class="section collapsible-section" id="smart-overview-section" open>
+    <summary class="collapsible-title">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="6" rx="7" ry="3"></ellipse>
+            <path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"></path>
+            <path d="M8 11h8"></path>
+            <path d="M8 15h5"></path>
+        </svg>
+        Discos SMART
+    </summary>
+
+    <div class="collapsible-body">
+        <div class="smartctl-status-line">
+    {% if data.smartctl.available %}
+        <span class="smartctl-status-badge smartctl-ok">smartctl disponible</span>
+    {% else %}
+        <span class="smartctl-status-badge smartctl-error">smartctl no disponible</span>
+    {% endif %}
+
+    {% if data.smartctl.path %}
+        <details class="smartctl-path-details">
+            <summary>Ver ruta</summary>
+            <code>{{ data.smartctl.path }}</code>
+        </details>
+    {% endif %}
+</div>
+
+        {% if data.disks %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Modelo</th>
+                            <th>Serie</th>
+                            <th>Familia</th>
+                            <th>Temp C</th>
+                            <th>Horas</th>
+                            <th>Vida restante</th>
+                            <th>Estado</th>
+                            <th>Acceso</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for disk in data.disks %}
+                            {% set row_class = "" %}
+                            {% if disk.evaluation_status == "Critical" %}
+                                {% set row_class = "row-status-critical" %}
+                            {% elif disk.evaluation_status in ["Warning", "Limited"] %}
+                                {% set row_class = "row-status-warning" %}
+                            {% endif %}
+
+                            <tr id="smart-disk-{{ loop.index }}" class="{{ row_class }}">
+                                <td>{{ loop.index }}</td>
+                                <td><strong>{{ disk.model | default("N/A") }}</strong></td>
+                                <td>{{ disk.serial | default("N/A") }}</td>
+                                <td>{{ disk.storage_family | default(disk.detected_type | default("N/A")) }}</td>
+                                <td>{{ disk.temperature_c | default("N/A") }}</td>
+                                <td>{{ disk.power_on_hours | default("N/A") }}</td>
+                                <td>
+                                    {% if disk.life and disk.life.remaining_percent is not none %}
+                                        {{ disk.life.remaining_percent }}%
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if disk.evaluation_status == "Critical" %}
+                                        <span class="status-inline warning">Critico</span>
+                                    {% elif disk.evaluation_status in ["Warning", "Limited"] %}
+                                        <span class="status-inline warning">{{ disk.evaluation_status }}</span>
+                                    {% else %}
+                                        <span class="status-inline ok">OK</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ disk.smart_device | default("N/A") }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-message">No se detectaron discos SMART.</p>
+        {% endif %}
+    </div>
+</details>
+
+{% if data.disks %}
+    <div class="smart-disk-stack">
+        {% for disk in data.disks %}
+            {% set disk_status = disk.evaluation_status | default("Unknown") %}
+            {% set panel_status_class = "" %}
+            {% if disk_status == "Critical" %}
+                {% set panel_status_class = "panel-status-critical" %}
+            {% elif disk_status in ["Warning", "Limited"] %}
+                {% set panel_status_class = "panel-status-warning" %}
+            {% endif %}
+
+            {% set ata = disk.ata_attributes | default({}) %}
+            {% set nvme = disk.nvme_health | default({}) %}
+
+            {% set ata_reallocated_events = ata.get("reallocated_event_count") %}
+{% set ata_bad_blocks = ata.get("bad_block_rate") or ata.get("runtime_bad_block") or ata.get("reallocated_sector_ct") %}
+{% set ata_reported_uncorrect = ata.get("reported_uncorrect") %}
+{% set ata_sata_phy_errors = ata.get("sata_phy_error_count") %}
+{% set ata_sata_crc_errors = ata.get("sata_crc_error_count") %}
+{% set ata_crc_errors = ata.get("crc_error_count") or ata.get("udma_crc_error_count") %}
+{% set ata_power_cycles = ata.get("power_cycle_count") %}
+
+            <details class="section collapsible-section" id="smart-disk-detail-{{ loop.index }}" open>
+                <summary class="collapsible-title">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <ellipse cx="12" cy="6" rx="7" ry="3"></ellipse>
+                        <path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"></path>
+                    </svg>
+                    Disco {{ loop.index }} - {{ disk.model | default("Sin modelo") }}
+                </summary>
+
+                <div class="collapsible-body">
+                    <div class="smart-detail-grid">
+                        <div class="detail-panel {{ panel_status_class }}">
+                            <h3 class="detail-panel-title">Resumen tecnico</h3>
+
+                            <table class="detail-table">
+                                <tbody>
+                                    <tr class="{% if panel_status_class %}status-focus-row{% endif %}">
+                                        <th>Estado</th>
+                                        <td>{{ disk_status }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Modelo</th>
+                                        <td>{{ disk.model | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Serie</th>
+                                        <td>{{ disk.serial | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Firmware</th>
+                                        <td>{{ disk.firmware | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Familia</th>
+                                        <td>{{ disk.storage_family | default(disk.detected_type | default("N/A")) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Acceso SMART</th>
+                                        <td>{{ disk.smart_device | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Entradas extra</th>
+                                        <td>
+                                            {% if disk.alternate_smart_devices %}
+                                                {{ disk.alternate_smart_devices | join(", ") }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="detail-panel">
+                            <h3 class="detail-panel-title">Salud y desgaste</h3>
+
+                            <table class="detail-table">
+                                <tbody>
+                                    <tr>
+                                        <th>SMART global</th>
+                                        <td>
+                                            {% if disk.smart_global_passed is sameas true %}
+                                                Passed
+                                            {% elif disk.smart_global_passed is sameas false %}
+                                                Failed
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Temperatura C</th>
+                                        <td>{{ disk.temperature_c | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Horas de uso</th>
+                                        <td>{{ disk.power_on_hours | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Vida restante</th>
+                                        <td>
+                                            {% if disk.life and disk.life.remaining_percent is not none %}
+                                                {{ disk.life.remaining_percent }}%
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Vida usada</th>
+                                        <td>
+                                            {% if disk.life and disk.life.used_percent is not none %}
+                                                {{ disk.life.used_percent }}%
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Nivel de datos</th>
+                                        <td>{{ disk.data_level | default("N/A") }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Salida smartctl</th>
+                                        <td>{{ disk.smartctl_exit_code | default("N/A") }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="detail-panel {{ panel_status_class }}">
+                            {% if nvme %}
+                                <h3 class="detail-panel-title">Indicadores NVMe</h3>
+
+                                <table class="detail-table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Avisos Criticos</th>
+                                            <td>{{ nvme.critical_warning | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Spare disponible</th>
+                                            <td>{{ nvme.available_spare | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Umbral spare</th>
+                                            <td>{{ nvme.available_spare_threshold | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Porcentaje usado</th>
+                                            <td>{{ nvme.percentage_used | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Errores de medio</th>
+                                            <td>{{ nvme.media_errors | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Log de errores</th>
+                                            <td>{{ nvme.num_err_log_entries | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Apagados inseguros</th>
+                                            <td>{{ nvme.unsafe_shutdowns | default("N/A") }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            {% elif ata %}
+                              <h3 class="detail-panel-title">Indicadores ATA</h3>
+
+<table class="detail-table">
+    <tbody>
+        <tr>
+            <th>Bloques defectuosos</th>
+            <td>{{ smart_raw(ata_bad_blocks) }}</td>
+        </tr>
+        <tr>
+            <th>Eventos reasignacion</th>
+            <td>{{ smart_raw(ata_reallocated_events) }}</td>
+        </tr>
+        <tr>
+            <th>Errores reportados</th>
+            <td>{{ smart_raw(ata_reported_uncorrect) }}</td>
+        </tr>
+        <tr>
+            <th>Errores SATA PHY</th>
+            <td>{{ smart_raw(ata_sata_phy_errors) }}</td>
+        </tr>
+        <tr>
+            <th>Errores CRC SATA</th>
+            <td>{{ smart_raw(ata_sata_crc_errors) }}</td>
+        </tr>
+        <tr>
+            <th>Errores CRC</th>
+            <td>{{ smart_raw(ata_crc_errors) }}</td>
+        </tr>
+        <tr>
+            <th>Encendidos</th>
+            <td>{{ smart_raw(ata_power_cycles) }}</td>
+        </tr>
+    </tbody>
+</table>
+                            {% else %}
+                                <h3 class="detail-panel-title">Indicadores clave</h3>
+
+                                <table class="detail-table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Datos SMART</th>
+                                            <td>{{ disk.data_level | default("N/A") }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Nota</th>
+                                            <td>
+                                                {% if disk.life and disk.life.note %}
+                                                    {{ disk.life.note }}
+                                                {% else %}
+                                                    No hay indicadores adicionales disponibles.
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if disk.evaluation_reasons or disk.flagged_items or disk.error %}
+                        <section class="section" style="margin-top: 12px;">
+                            <h3 class="smart-subtitle">Observaciones</h3>
+
+                            {% if disk.evaluation_reasons %}
+                                <div style="margin-bottom: 12px;">
+                                    <div class="smart-muted" style="margin-bottom: 6px;">Motivos de evaluacion</div>
+                                    <ul class="smart-note-list">
+                                        {% for reason in disk.evaluation_reasons %}
+                                            <li>{{ reason }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            {% if disk.flagged_items %}
+                                <div style="margin-bottom: 12px;">
+                                    <div class="smart-muted" style="margin-bottom: 6px;">Items marcados</div>
+                                    <ul class="smart-note-list">
+                                        {% for item in disk.flagged_items %}
+                                            <li>{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            {% if disk.error %}
+                                <div class="alert-stack">
+                                    <div class="alert-line">
+                                        <span class="status-badge status-error">Error</span>
+                                        <span class="alert-message">{{ disk.error }}</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </section>
+                    {% endif %}
+
+                    {% if disk.nvme_health %}
+                        <details class="section collapsible-section" style="margin-top: 12px;">
+                            <summary class="collapsible-title">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 9V4h12v5"></path>
+                                    <path d="M4 13h16v7H4z"></path>
+                                </svg>
+                                Datos NVMe completos
+                            </summary>
+
+                            <div class="collapsible-body">
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Campo</th>
+                                                <th>Valor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for key, value in disk.nvme_health.items() %}
+                                                <tr>
+                                                    <td>{{ key | replace("_", " ") | title }}</td>
+                                                    <td>{{ value }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </details>
+                    {% endif %}
+
+                    {% if disk.ata_attributes %}
+                        <details class="section collapsible-section" style="margin-top: 12px;">
+                            <summary class="collapsible-title">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 6h16"></path>
+                                    <path d="M4 12h16"></path>
+                                    <path d="M4 18h16"></path>
+                                </svg>
+                                Atributos ATA completos
+                            </summary>
+
+                            <div class="collapsible-body">
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Clave</th>
+                                                <th>ID</th>
+                                                <th>Nombre</th>
+                                                <th>Current</th>
+                                                <th>Worst</th>
+                                                <th>Threshold</th>
+                                                <th>Raw</th>
+                                                <th>Raw text</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for key, attribute in disk.ata_attributes.items() %}
+                                                <tr>
+                                                    <td>{{ key }}</td>
+                                                    <td>{{ attribute.id | default("N/A") }}</td>
+                                                    <td>{{ attribute.name | default("N/A") }}</td>
+                                                    <td>{{ attribute.current | default("N/A") }}</td>
+                                                    <td>{{ attribute.worst | default("N/A") }}</td>
+                                                    <td>{{ attribute.threshold | default("N/A") }}</td>
+                                                    <td>{{ attribute.raw | default("N/A") }}</td>
+                                                    <td>{{ attribute.raw_text | default("N/A") }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </details>
+                    {% endif %}
+                </div>
+            </details>
+        {% endfor %}
+    </div>
+{% endif %}

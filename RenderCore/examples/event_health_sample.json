@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "report_type": "event_health",
+    "tool_name": "Event Health",
+    "schema_version": "1.0",
+    "version": "0.2.0",
+    "generated_at": "2026-07-02T14:30:00-03:00"
+  },
+  "summary": {
+    "status": "warning",
+    "system_events": 18,
+    "application_events": 9,
+    "critical_count": 0,
+    "warning_count": 3,
+    "error_count": 2,
+    "scan_window_hours": 24
+  },
+  "report_brief": {
+    "title": "Informe Event Health",
+    "subtitle": "Revisión de eventos recientes de Windows",
+    "status": "warning",
+    "description": "Ejemplo mínimo compatible con RenderCore."
+  },
+  "data": {
+    "events": [
+      {
+        "time_created": "2026-07-02 08:11:25",
+        "log_name": "System",
+        "provider": "Service Control Manager",
+        "event_id": 7036,
+        "level": "Information",
+        "message": "The service entered the running state."
+      },
+      {
+        "time_created": "2026-07-02 09:22:04",
+        "log_name": "Application",
+        "provider": "Application Error",
+        "event_id": 1000,
+        "level": "Error",
+        "message": "Example application error for render validation."
+      },
+      {
+        "time_created": "2026-07-02 10:15:42",
+        "log_name": "System",
+        "provider": "Disk",
+        "event_id": 153,
+        "level": "Warning",
+        "message": "Example disk warning for render validation."
+      }
+    ],
+    "rules_matched": [
+      {
+        "rule_id": "disk_warning",
+        "severity": "warning",
+        "count": 1,
+        "recommendation": "Revisar SMART y cableado si el evento se repite."
+      },
+      {
+        "rule_id": "application_error",
+        "severity": "error",
+        "count": 1,
+        "recommendation": "Validar aplicacion afectada y registros relacionados."
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "level": "info",
+      "code": "source",
+      "message": "Datos de ejemplo para prueba de render."
+    }
+  ],
+  "errors": []
+}

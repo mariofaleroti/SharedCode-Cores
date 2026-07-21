@@ -1,0 +1,277 @@
+{#
+    network_content.html.j2
+
+    Contenido interno del reporte de red.
+
+    Este archivo no hereda de ninguna plantilla base.
+    Este archivo no define titulo, encabezado ni pie de pagina.
+
+    Solo contiene el HTML interno que puede ser reutilizado por:
+    - network_report.html.j2
+    - full_report.html.j2
+#}
+
+{% import "components/summary_card.html.j2" as summary_card %}
+
+{% set embedded_report = embedded_report | default(false) %}
+
+{% if not embedded_report %}
+
+<div class="overview-grid">
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+            </svg>
+            Resumen
+        </h2>
+
+        <div class="summary-card-grid">
+            {# Summary card: status #}
+            {% set status_value = summary.status | default("N/A") %}
+
+            {% call summary_card.render_summary_card("Estado", status_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6 9 17l-5-5"></path>
+                </svg>
+            {% endcall %}
+
+            {# Summary card: adapters #}
+            {% set adapters_value = summary.active_adapter_count | default("N/A") %}
+
+            {% call summary_card.render_summary_card("Adaptadores", adapters_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="10" rx="2"></rect>
+                    <path d="M8 20h8"></path>
+                    <path d="M12 14v6"></path>
+                </svg>
+            {% endcall %}
+
+            {# Summary card: IP configs #}
+            {% set ip_config_value = summary.ip_configuration_count | default("N/A") %}
+
+            {% call summary_card.render_summary_card("Configs IP", ip_config_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20v-6"></path>
+                    <path d="M6 20v-4"></path>
+                    <path d="M18 20v-8"></path>
+                    <path d="M4 20h16"></path>
+                </svg>
+            {% endcall %}
+
+            {# Summary card: shares #}
+            {% set shares_value = summary.local_share_count | default("N/A") %}
+
+            {% call summary_card.render_summary_card("Compartidos", shares_value) %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path>
+                    <path d="M4 8h16"></path>
+                    <path d="M8 4h8l2 4H6z"></path>
+                </svg>
+            {% endcall %}
+
+            {# Summary card: critical #}
+            {% set critical_value = summary.critical_count | default(0) %}
+
+            {% call summary_card.render_summary_card("Criticos", critical_value, "critical") %}
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M15 9 9 15"></path>
+                    <path d="M9 9l6 6"></path>
+                </svg>
+            {% endcall %}
+        </div>
+
+        <div class="summary-meta-line">
+            <span>Dominio / Grupo: {{ summary.domain_or_workgroup | default("N/A") }}</span>
+            <span>Generado: {{ data.CollectedAt | default("N/A") }}</span>
+        </div>
+    </section>
+
+    <section class="overview-panel">
+        <h2 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.3 4.3 2.8 17.5A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.5L13.7 4.3a2 2 0 0 0-3.4 0z"></path>
+                <path d="M12 9v4"></path>
+                <path d="M12 17h.01"></path>
+            </svg>
+            Diagnosticos
+        </h2>
+
+        {% include "components/diagnostics.html.j2" %}
+    </section>
+</div>
+
+{% include "components/errors.html.j2" %}
+
+{% endif %}
+
+<section class="section" id="network-section">
+    <h2 class="section-title">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 20h12"></path>
+            <path d="M12 16v4"></path>
+            <rect x="4" y="4" width="16" height="10" rx="2"></rect>
+        </svg>
+        Red
+    </h2>
+
+    <div class="network-panel-grid">
+        <div class="detail-panel">
+            <h3 class="detail-panel-title">Dominio / Grupo de trabajo</h3>
+
+            <table class="detail-table">
+                <tbody>
+                    <tr>
+                        <th>Unido a dominio</th>
+                        <td>
+                            {% if data.DomainInfo.IsDomainJoined %}
+                                Si
+                            {% else %}
+                                No
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Dominio o grupo</th>
+                        <td>{{ data.DomainInfo.DomainOrWorkgroup | default("N/A") }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-panel">
+            <h3 class="detail-panel-title">Conteo general</h3>
+
+            <table class="detail-table">
+                <tbody>
+                    <tr>
+                        <th>Adaptadores activos</th>
+                        <td>{{ summary.active_adapter_count | default("N/A") }}</td>
+                    </tr>
+                    <tr>
+                        <th>Configuraciones IP</th>
+                        <td>{{ summary.ip_configuration_count | default("N/A") }}</td>
+                    </tr>
+                    <tr>
+                        <th>Recursos compartidos</th>
+                        <td>{{ summary.local_share_count | default("N/A") }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="detail-panel network-wide-panel">
+            <h3 class="detail-panel-title">Adaptadores activos</h3>
+
+            {% if data.ActiveAdapters %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Descripcion</th>
+                                <th>Tipo</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for adapter in data.ActiveAdapters %}
+                                <tr>
+                                    <td>{{ adapter.Name | default("N/A") }}</td>
+                                    <td>{{ adapter.InterfaceDescription | default("N/A") }}</td>
+                                    <td>{{ adapter.NetworkType | default("N/A") }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-message">No se encontraron adaptadores activos.</p>
+            {% endif %}
+        </div>
+
+        <div class="detail-panel network-wide-panel">
+            <h3 class="detail-panel-title">Configuraciones IP</h3>
+
+            {% if data.IPConfigurations %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Interfaz</th>
+                                <th>Direccion IP</th>
+                                <th>Tipo</th>
+                                <th>Gateway</th>
+                                <th>DNS</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for ip_config in data.IPConfigurations %}
+                                <tr>
+                                    <td>{{ ip_config.InterfaceAlias | default("N/A") }}</td>
+                                    <td>{{ ip_config.IPAddress | default("N/A") }}</td>
+                                    <td>{{ ip_config.AddressType | default("N/A") }}</td>
+                                    <td>{{ ip_config.Gateway | default("N/A", true) }}</td>
+                                    <td>
+                                        {% if ip_config.DnsServers %}
+                                            {{ ip_config.DnsServers | join(", ") }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-message">No se encontraron configuraciones IP.</p>
+            {% endif %}
+        </div>
+
+        <div class="detail-panel">
+            <h3 class="detail-panel-title">Unidades logicas</h3>
+
+            {% if data.LogicalDrives %}
+                <table class="detail-table">
+                    <tbody>
+                        {% for drive in data.LogicalDrives %}
+                            <tr>
+                                <th>{{ drive.DriveLetter | default("N/A") }}:</th>
+                                <td>{{ drive.Label | default("N/A", true) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-message">No se encontraron unidades logicas.</p>
+            {% endif %}
+        </div>
+
+        <div class="detail-panel">
+            <h3 class="detail-panel-title">Recursos compartidos</h3>
+
+            {% if data.LocalShares %}
+                <table class="detail-table">
+                    <tbody>
+                        {% for share in data.LocalShares %}
+                            <tr>
+                                <th>{{ share.Name | default("N/A") }}</th>
+                                <td>{{ share.Path | default("N/A") }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="empty-message">No se encontraron recursos compartidos.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+

@@ -58,6 +58,12 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - Switches, checkboxes y botones aceptan geometría y tipografía configurables.
 - `SidebarFormSection` puede crear combos con acción sin frames manuales.
 - La línea de desarrollo avanza a `1.1.0.dev3`.
+- `SectionCard` admite acciones declarativas en la cabecera.
+- `GuiAppWindow` permite declarar peso, altura mínima y sticky de cada tarjeta.
+- Se agregó `CollapsibleSectionCard` y `add_collapsible_card`.
+- Se agregaron `KeyValueTable`, `KeyValueItem` y `EmptyState`.
+- Los estados visuales ya no necesitan filas falsas dentro de tablas de negocio.
+- La línea de desarrollo avanza a `1.1.0.dev4`.
 
 ### Documentación
 

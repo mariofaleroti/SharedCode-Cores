@@ -11,7 +11,10 @@ from gui_core import (
     COLOR_THEME_OPTIONS,
     SURFACE_THEME_OPTIONS,
     ButtonSpec,
+    CardHeaderAction,
     ChoiceOption,
+    KeyValueItem,
+    VALID_STATE_KINDS,
     DialogButton,
     DialogSpec,
     COMFORTABLE_LAYOUT_PROFILE,
@@ -35,6 +38,7 @@ from gui_core import (
     ThemeConfig,
     build_restart_arguments,
     coerce_choice_options,
+    coerce_key_value_items,
     coerce_row_values,
     get_button_style_options,
     get_choice_labels,
@@ -51,6 +55,7 @@ from gui_core import (
     normalize_surface_theme_label,
     normalize_picker_mode,
     normalize_selection_mode,
+    normalize_state_kind,
     normalize_secondary_window_size,
     resolve_window_icon_path,
     set_window_icon_metadata,
@@ -238,6 +243,46 @@ class GuiCoreTests(unittest.TestCase):
     def test_compact_control_exports_are_public(self):
         self.assertTrue(callable(LabeledComboAction))
         self.assertTrue(callable(LabeledComboBox))
+
+
+    def test_card_header_action_key_is_stable(self):
+        action = CardHeaderAction("Abrir carpeta")
+        self.assertEqual(action.key, "abrir_carpeta")
+        explicit = CardHeaderAction(
+            "Abrir",
+            command_key="open",
+        )
+        self.assertEqual(explicit.key, "open")
+
+    def test_state_kind_normalization(self):
+        self.assertEqual(normalize_state_kind("WARNING"), "warning")
+        self.assertEqual(normalize_state_kind("unknown"), "empty")
+        self.assertIn("ready", VALID_STATE_KINDS)
+
+    def test_key_value_items_accept_mapping_and_sequences(self):
+        mapped = coerce_key_value_items(
+            {"Estado": "Operativo", "Tarea": "Instalada"}
+        )
+        self.assertEqual(
+            [item.field for item in mapped],
+            ["Estado", "Tarea"],
+        )
+
+        items = coerce_key_value_items(
+            (
+                ("Errores", 0, "success"),
+                {
+                    "field": "Sincronización",
+                    "value": "Correcta",
+                    "semantic": "ready",
+                },
+                KeyValueItem("Rutas", 2),
+            )
+        )
+        self.assertEqual(len(items), 3)
+        self.assertEqual(items[0].semantic, "success")
+        self.assertEqual(items[1].value, "Correcta")
+        self.assertEqual(items[2].field, "Rutas")
 
     def test_restart_arguments_support_script_and_frozen_apps(self):
         script_args = build_restart_arguments(
@@ -597,7 +642,7 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
         self.assertEqual(loaded, GuiPreferences())
 
     def test_public_version_matches_current_development_line(self):
-        self.assertEqual(__version__, "1.1.0.dev3")
+        self.assertEqual(__version__, "1.1.0.dev4")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):

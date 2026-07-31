@@ -25,7 +25,18 @@ from ..styles.colors import get_surface_colors
 from ..styles.fonts import FontConfig
 from ..theme import apply_runtime_theme, apply_theme
 from ..windows import apply_window_icon, set_window_icon_metadata, show_settings_window
-from ..widgets import ButtonRow, ContentPanel, ProgressPanel, ResultsTable, SectionCard, Sidebar, SidebarFormSection, StatusBar
+from ..widgets import (
+    ButtonRow,
+    CardHeaderAction,
+    CollapsibleSectionCard,
+    ContentPanel,
+    ProgressPanel,
+    ResultsTable,
+    SectionCard,
+    Sidebar,
+    SidebarFormSection,
+    StatusBar,
+)
 
 
 def build_restart_arguments(
@@ -444,14 +455,14 @@ class GuiAppWindow:
             return 0
         return logical_row + 1
 
-    def add_content_card(self, title: str, subtitle: str = "", row_weight: int = 0) -> SectionCard:
-        card = SectionCard(
-            self.content_panel.frame,
-            title,
-            subtitle,
-            self.font_config,
-            layout_profile=self.layout_profile,
-        )
+    def _place_content_card(
+        self,
+        card: SectionCard,
+        *,
+        row_weight: int = 0,
+        min_height: int | None = None,
+        sticky: str = "ew",
+    ) -> SectionCard:
         grid_row = self._get_content_grid_row(self._content_row)
         card.grid(
             row=grid_row,
@@ -463,13 +474,81 @@ class GuiAppWindow:
                 else 0,
                 self.layout_profile.content_card_gap,
             ),
-            sticky="ew",
+            sticky=sticky,
         )
-        if row_weight:
-            self.content_panel.frame.grid_rowconfigure(grid_row, weight=row_weight)
+
+        row_options: dict[str, int] = {
+            "weight": max(0, int(row_weight)),
+        }
+        if min_height is not None:
+            resolved_min_height = int(min_height)
+            if resolved_min_height <= 0:
+                raise ValueError("min_height must be greater than zero.")
+            row_options["minsize"] = resolved_min_height
+
+        self.content_panel.frame.grid_rowconfigure(
+            grid_row,
+            **row_options,
+        )
         self._content_row += 1
         self.register_visual_component(card)
         return card
+
+    def add_content_card(
+        self,
+        title: str,
+        subtitle: str = "",
+        row_weight: int = 0,
+        *,
+        min_height: int | None = None,
+        sticky: str = "ew",
+        header_actions: Sequence[CardHeaderAction] = (),
+    ) -> SectionCard:
+        card = SectionCard(
+            self.content_panel.frame,
+            title,
+            subtitle,
+            self.font_config,
+            layout_profile=self.layout_profile,
+            header_actions=header_actions,
+        )
+        return self._place_content_card(
+            card,
+            row_weight=row_weight,
+            min_height=min_height,
+            sticky=sticky,
+        )
+
+    def add_collapsible_card(
+        self,
+        title: str,
+        subtitle: str = "",
+        row_weight: int = 0,
+        *,
+        min_height: int | None = None,
+        sticky: str = "ew",
+        header_actions: Sequence[CardHeaderAction] = (),
+        collapsed: bool = False,
+        collapsed_summary: str = "",
+        on_toggle: Callable[[bool], None] | None = None,
+    ) -> CollapsibleSectionCard:
+        card = CollapsibleSectionCard(
+            self.content_panel.frame,
+            title,
+            subtitle,
+            self.font_config,
+            layout_profile=self.layout_profile,
+            header_actions=header_actions,
+            collapsed=collapsed,
+            collapsed_summary=collapsed_summary,
+            on_toggle=on_toggle,
+        )
+        return self._place_content_card(
+            card,
+            row_weight=row_weight,
+            min_height=min_height,
+            sticky=sticky,
+        )
 
     def clear_content(self) -> None:
         for child in list(self.content_panel.frame.winfo_children()):

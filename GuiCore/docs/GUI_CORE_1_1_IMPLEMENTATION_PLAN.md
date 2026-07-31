@@ -132,6 +132,8 @@ SmartFilter puede eliminar las clases `_Compact*`.
 
 ## Fase 5 — Tarjetas y componentes de estado
 
+Estado: **Fase 5A implementada en `1.1.0.dev4`: tarjetas flexibles, colapso, tabla clave/valor y estado vacío. Métricas y tooltips quedan para Fase 5B.**
+
 ### Trabajo
 
 - ampliar `SectionCard`;

@@ -38,3 +38,5 @@ conserva su lógica, configuración y contratos propios.
 - `SIDEBAR_CONFIGURATION.md`
 
 - `COMPACT_CONTROLS.md`
+
+- `CARDS_AND_STATE_COMPONENTS.md`

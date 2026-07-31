@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from ..dependencies import require_customtkinter
+from ..layout_profiles import GuiLayoutProfile, get_layout_profile
 from ..styles.colors import get_accent_colors, get_control_colors, get_neutral_button_colors, get_surface_colors
 from ..styles.fonts import FontConfig
 
@@ -195,10 +196,14 @@ class SidebarFormSection:
         title: str,
         subtitle: str = "",
         font_config: FontConfig | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.frame = ctk.CTkFrame(parent, fg_color="transparent", corner_radius=10)
         self.frame.grid_columnconfigure(0, weight=1)
         self._next_row = 0
@@ -214,7 +219,16 @@ class SidebarFormSection:
             font=self.font_config.tuple("section", "bold"),
             anchor="w",
         )
-        self.title_label.grid(row=self._next_row, column=0, padx=2, pady=(4, 5), sticky="ew")
+        self.title_label.grid(
+            row=self._next_row,
+            column=0,
+            padx=2,
+            pady=(
+                self.layout_profile.section_title_pad_top,
+                self.layout_profile.section_title_pad_bottom,
+            ),
+            sticky="ew",
+        )
         self._next_row += 1
 
         self.subtitle_label = None
@@ -228,14 +242,31 @@ class SidebarFormSection:
                 justify="left",
                 wraplength=210,
             )
-            self.subtitle_label.grid(row=self._next_row, column=0, padx=2, pady=(0, 8), sticky="ew")
+            self.subtitle_label.grid(
+                row=self._next_row,
+                column=0,
+                padx=2,
+                pady=(0, self.layout_profile.section_subtitle_pad_bottom),
+                sticky="ew",
+            )
             self._next_row += 1
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         self.frame.grid(*args, **kwargs)
 
-    def add_widget(self, widget: Any, pady: tuple[int, int] = (0, 10), sticky: str = "ew") -> Any:
-        widget.grid(row=self._next_row, column=0, pady=pady, sticky=sticky)
+    def add_widget(
+        self,
+        widget: Any,
+        pady: tuple[int, int] | None = None,
+        sticky: str = "ew",
+    ) -> Any:
+        resolved_pady = pady or (0, self.layout_profile.widget_gap)
+        widget.grid(
+            row=self._next_row,
+            column=0,
+            pady=resolved_pady,
+            sticky=sticky,
+        )
         self._next_row += 1
         self._widgets.append(widget)
         # A section can be registered in GuiAppWindow before the app adds its
@@ -265,21 +296,27 @@ class SidebarFormSection:
             pass
 
     def add_labeled_entry(self, label: str, **kwargs: Any) -> "LabeledEntry":
+        kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(LabeledEntry(self.frame, label, font_config=self.font_config, **kwargs))
 
     def add_labeled_combo(self, label: str, values: Iterable[str | ChoiceOption | Mapping[str, Any]], **kwargs: Any) -> "LabeledComboBox":
+        kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(LabeledComboBox(self.frame, label, values, font_config=self.font_config, **kwargs))
 
     def add_path_picker(self, label: str, **kwargs: Any) -> "PathPicker":
+        kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(PathPicker(self.frame, label, font_config=self.font_config, **kwargs))
 
     def add_checkbox(self, text: str, **kwargs: Any) -> "LabeledCheckBox":
+        kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(LabeledCheckBox(self.frame, text, font_config=self.font_config, **kwargs))
 
     def add_switch(self, text: str, **kwargs: Any) -> "LabeledSwitch":
+        kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(LabeledSwitch(self.frame, text, font_config=self.font_config, **kwargs))
 
     def add_action_button(self, text: str, command: Callable[[], None] | None = None, **kwargs: Any) -> "ActionButton":
+        kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(ActionButton(self.frame, text, command=command, font_config=self.font_config, **kwargs))
 
     def apply_visual_preferences(
@@ -322,10 +359,14 @@ class LabeledEntry:
         font_config: FontConfig | None = None,
         enabled: bool = True,
         show: str | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
 
@@ -336,12 +377,19 @@ class LabeledEntry:
             text_color=("gray30", "gray72"),
             anchor="w",
         )
-        self.label.grid(row=0, column=0, padx=2, pady=(0, 4), sticky="ew")
+        self.label.grid(
+            row=0,
+            column=0,
+            padx=2,
+            pady=(0, self.layout_profile.label_gap),
+            sticky="ew",
+        )
 
         entry_kwargs: dict[str, Any] = {
             "placeholder_text": placeholder,
             "font": self.font_config.tuple("body"),
             "state": normalize_control_state(enabled),
+            "height": self.layout_profile.control_height,
         }
         if show:
             entry_kwargs["show"] = show
@@ -398,10 +446,14 @@ class LabeledComboBox:
         font_config: FontConfig | None = None,
         enabled: bool = True,
         command: Callable[[str], None] | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.options = coerce_choice_options(values)
         labels = [option.label for option in self.options]
         self._value_by_label = {option.label: option.resolved_value for option in self.options}
@@ -416,7 +468,13 @@ class LabeledComboBox:
             text_color=("gray30", "gray72"),
             anchor="w",
         )
-        self.label.grid(row=0, column=0, padx=2, pady=(0, 4), sticky="ew")
+        self.label.grid(
+            row=0,
+            column=0,
+            padx=2,
+            pady=(0, self.layout_profile.label_gap),
+            sticky="ew",
+        )
 
         self.combo = ctk.CTkComboBox(
             self.frame,
@@ -425,6 +483,7 @@ class LabeledComboBox:
             dropdown_font=self.font_config.tuple("body"),
             state=normalize_control_state(enabled),
             command=command,
+            height=self.layout_profile.control_height,
         )
         self.combo.grid(row=1, column=0, sticky="ew")
 
@@ -494,10 +553,14 @@ class PathPicker:
         filetypes: Sequence[tuple[str, str]] | None = None,
         title: str | None = None,
         on_change: Callable[[str], None] | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.mode = normalize_picker_mode(mode)
         self.filetypes = tuple(filetypes or (("Todos los archivos", "*.*"),))
         self.dialog_title = title or ("Seleccionar carpeta" if self.mode == "folder" else "Seleccionar archivo")
@@ -513,25 +576,39 @@ class PathPicker:
             text_color=("gray30", "gray72"),
             anchor="w",
         )
-        self.label.grid(row=0, column=0, columnspan=2, padx=2, pady=(0, 4), sticky="ew")
+        self.label.grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            padx=2,
+            pady=(0, self.layout_profile.label_gap),
+            sticky="ew",
+        )
 
         self.entry = ctk.CTkEntry(
             self.frame,
             placeholder_text=placeholder,
             font=self.font_config.tuple("body"),
             state=normalize_control_state(enabled),
+            height=self.layout_profile.control_height,
         )
         self.entry.grid(row=1, column=0, sticky="ew")
 
         self.button = ctk.CTkButton(
             self.frame,
             text=button_text,
-            width=34,
+            width=self.layout_profile.picker_button_width,
+            height=self.layout_profile.control_height,
             command=self.open_dialog,
             state=normalize_control_state(enabled),
             font=self.font_config.tuple("body"),
         )
-        self.button.grid(row=1, column=1, padx=(8, 0), sticky="e")
+        self.button.grid(
+            row=1,
+            column=1,
+            padx=(self.layout_profile.inline_gap, 0),
+            sticky="e",
+        )
 
         if value:
             self.set_value(value)
@@ -607,10 +684,14 @@ class LabeledCheckBox:
         font_config: FontConfig | None = None,
         enabled: bool = True,
         command: Callable[[], None] | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.variable = ctk.BooleanVar(value=bool(default))
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
@@ -621,6 +702,7 @@ class LabeledCheckBox:
             command=command,
             font=self.font_config.tuple("body"),
             state=normalize_control_state(enabled),
+            height=self.layout_profile.toggle_height,
         )
         self.checkbox.grid(row=0, column=0, padx=2, pady=0, sticky="ew")
 
@@ -664,10 +746,14 @@ class LabeledSwitch:
         font_config: FontConfig | None = None,
         enabled: bool = True,
         command: Callable[[], None] | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.variable = ctk.BooleanVar(value=bool(default))
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
@@ -678,6 +764,7 @@ class LabeledSwitch:
             command=command,
             font=self.font_config.tuple("body"),
             state=normalize_control_state(enabled),
+            height=self.layout_profile.toggle_height,
         )
         self.switch.grid(row=0, column=0, padx=2, pady=0, sticky="ew")
 
@@ -721,14 +808,18 @@ class ActionButton:
         style: str = "primary",
         font_config: FontConfig | None = None,
         enabled: bool = True,
-        height: int = 34,
+        height: int | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
         color_theme: str | None = "blue",
         surface_theme: str | None = "default",
         appearance_mode: str | None = "dark",
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.style = normalize_button_style(style)
         self.color_theme = str(color_theme or "blue")
         self.surface_theme = str(surface_theme or "default")
@@ -742,7 +833,11 @@ class ActionButton:
             command=command,
             font=self.font_config.tuple("body"),
             state=normalize_control_state(enabled),
-            height=height,
+            height=(
+                self.layout_profile.action_height
+                if height is None
+                else int(height)
+            ),
             **options,
         )
         self.button.grid(row=0, column=0, sticky="ew")
@@ -786,10 +881,14 @@ class ButtonRow:
         buttons: Iterable[ButtonSpec | Mapping[str, Any]],
         commands: Mapping[str, Callable[[], None]] | None = None,
         font_config: FontConfig | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.commands = dict(commands or {})
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.buttons: dict[str, ActionButton] = {}
@@ -804,8 +903,19 @@ class ButtonRow:
                 style=button_spec.style,
                 font_config=self.font_config,
                 enabled=button_spec.enabled,
+                layout_profile=self.layout_profile,
             )
-            button.grid(row=0, column=index, padx=(0, 10 if index < len(specs) - 1 else 0), sticky="ew")
+            button.grid(
+                row=0,
+                column=index,
+                padx=(
+                    0,
+                    self.layout_profile.button_gap
+                    if index < len(specs) - 1
+                    else 0,
+                ),
+                sticky="ew",
+            )
             self.buttons[button_spec.key] = button
 
     def _coerce_button_specs(self, buttons: Iterable[ButtonSpec | Mapping[str, Any]]) -> list[ButtonSpec]:

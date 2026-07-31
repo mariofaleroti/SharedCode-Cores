@@ -24,6 +24,15 @@ from .dialogs import (
     show_warning_dialog,
 )
 from .layout import calculate_center_geometry, normalize_window_size
+from .layout_profiles import (
+    COMFORTABLE_LAYOUT_PROFILE,
+    COMPACT_LAYOUT_PROFILE,
+    LAYOUT_PROFILE_NAMES,
+    STANDARD_LAYOUT_PROFILE,
+    GuiLayoutProfile,
+    get_layout_profile,
+    normalize_layout_profile_name,
+)
 from .models import ThemeConfig, WindowConfig
 from .preferences import (
     APPEARANCE_LABEL_OPTIONS,
@@ -122,6 +131,13 @@ __all__ = [
     "DEFAULT_SURFACE_THEME",
     "DEFAULT_WINDOW_HEIGHT",
     "DEFAULT_WINDOW_WIDTH",
+    "COMFORTABLE_LAYOUT_PROFILE",
+    "COMPACT_LAYOUT_PROFILE",
+    "LAYOUT_PROFILE_NAMES",
+    "STANDARD_LAYOUT_PROFILE",
+    "GuiLayoutProfile",
+    "get_layout_profile",
+    "normalize_layout_profile_name",
     "ACCENT_COLOR_OPTIONS",
     "ACCENT_COLOR_PALETTE",
     "SURFACE_COLOR_OPTIONS",

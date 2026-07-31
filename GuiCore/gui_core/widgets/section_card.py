@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..dependencies import require_customtkinter
+from ..layout_profiles import GuiLayoutProfile, get_layout_profile
 from ..styles.colors import get_surface_colors
 from ..styles.fonts import FontConfig
 
@@ -16,12 +17,21 @@ class SectionCard:
         title: str = "",
         subtitle: str = "",
         font_config: FontConfig | None = None,
-        corner_radius: int = 14,
+        corner_radius: int | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
-        self.font_config = font_config or FontConfig()
-        self.frame = ctk.CTkFrame(parent, corner_radius=corner_radius)
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
+        resolved_corner_radius = (
+            self.layout_profile.card_corner_radius
+            if corner_radius is None
+            else int(corner_radius)
+        )
+        self.frame = ctk.CTkFrame(parent, corner_radius=resolved_corner_radius)
         self.frame.grid_columnconfigure(0, weight=1)
         self.content_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
         self.content_frame.grid_columnconfigure(0, weight=1)
@@ -37,7 +47,16 @@ class SectionCard:
                 font=self.font_config.tuple("section", "bold"),
                 anchor="w",
             )
-            self.title_label.grid(row=row, column=0, padx=16, pady=(14, 2), sticky="ew")
+            self.title_label.grid(
+                row=row,
+                column=0,
+                padx=self.layout_profile.card_inner_pad_x,
+                pady=(
+                    self.layout_profile.card_header_pad_top,
+                    self.layout_profile.card_title_gap,
+                ),
+                sticky="ew",
+            )
             row += 1
 
         if subtitle:
@@ -50,10 +69,25 @@ class SectionCard:
                 justify="left",
                 wraplength=760,
             )
-            self.subtitle_label.grid(row=row, column=0, padx=16, pady=(0, 8), sticky="ew")
+            self.subtitle_label.grid(
+                row=row,
+                column=0,
+                padx=self.layout_profile.card_inner_pad_x,
+                pady=(0, self.layout_profile.card_subtitle_gap),
+                sticky="ew",
+            )
             row += 1
 
-        self.content_frame.grid(row=row, column=0, padx=16, pady=(8, 16), sticky="nsew")
+        self.content_frame.grid(
+            row=row,
+            column=0,
+            padx=self.layout_profile.card_inner_pad_x,
+            pady=(
+                self.layout_profile.card_content_pad_top,
+                self.layout_profile.card_content_pad_bottom,
+            ),
+            sticky="nsew",
+        )
         self.frame.grid_rowconfigure(row, weight=1)
 
     def grid(self, *args: Any, **kwargs: Any) -> None:

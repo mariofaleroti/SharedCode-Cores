@@ -65,12 +65,27 @@ class FontConfig:
 
     family: str = "Segoe UI"
     size_option: str = "Normal"
+    size_offset: int = 0
 
     def size(self, role: str = "body") -> int:
-        return get_font_role_size(self.size_option, role)
+        base_size = get_font_role_size(self.size_option, role)
+        return max(8, base_size + int(self.size_offset))
 
     def tuple(self, role: str = "body", weight: str | None = None) -> Tuple[str, int] | Tuple[str, int, str]:
-        return get_font_tuple(self.family, self.size_option, role, weight)
+        values: list[str | int] = [
+            normalize_font_family(self.family),
+            self.size(role),
+        ]
+        if weight:
+            values.append(weight)
+        return tuple(values)  # type: ignore[return-value]
+
+    def with_size_offset(self, size_offset: int) -> "FontConfig":
+        return FontConfig(
+            family=self.family,
+            size_option=self.size_option,
+            size_offset=int(size_offset),
+        )
 
 
 def normalize_font_family(font_family: str | None) -> str:

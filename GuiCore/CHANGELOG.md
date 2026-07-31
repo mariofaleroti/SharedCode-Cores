@@ -41,6 +41,11 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - Se agregaron pruebas unitarias y smoke tests con widgets `ttk` reales.
 - La fuente del repositorio inicia la línea de desarrollo `1.1.0.dev0`.
 - Los metadatos heredables de iconos ahora usan separadores `/` estables en Windows y Linux.
+- Se agregaron perfiles de layout `compact`, `standard` y `comfortable`.
+- `standard` conserva los tokens históricos de GuiCore 1.0.0.
+- GuiAppWindow propaga densidad, alturas y espaciados a sidebar, controles y tarjetas.
+- Se documentaron perfiles personalizados inmutables y serializables.
+- La línea de desarrollo avanza a `1.1.0.dev1`.
 
 ### Documentación
 

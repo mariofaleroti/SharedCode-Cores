@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Tuple
 
 from .constants import DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH
+from .layout_profiles import GuiLayoutProfile, get_layout_profile
 from .models import ThemeConfig, WindowConfig
 from .preferences import GuiPreferences
 
@@ -68,6 +69,7 @@ class GuiAppConfig:
     min_width: int = 1000
     min_height: int = 640
     sidebar_width: int = 270
+    layout_profile: str | GuiLayoutProfile = "standard"
     maximize_on_start: bool = True
     restart_on_appearance_change: bool = True
     restart_delay_ms: int = 350
@@ -85,6 +87,10 @@ class GuiAppConfig:
             GuiMenuItem("Salir", "exit"),
         )
     )
+
+    @property
+    def resolved_layout_profile(self) -> GuiLayoutProfile:
+        return get_layout_profile(self.layout_profile)
 
     @property
     def window_title(self) -> str:
@@ -111,6 +117,7 @@ class GuiAppConfig:
             "min_width": self.min_width,
             "min_height": self.min_height,
             "sidebar_width": self.sidebar_width,
+            "layout_profile": self.resolved_layout_profile.to_dict(),
             "maximize_on_start": self.maximize_on_start,
             "restart_on_appearance_change": self.restart_on_appearance_change,
             "restart_delay_ms": self.restart_delay_ms,

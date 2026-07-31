@@ -19,6 +19,7 @@ from ..dialogs import (
     show_warning_dialog,
 )
 from ..constants import DEFAULT_APPEARANCE_MODE, DEFAULT_COLOR_THEME
+from ..layout_profiles import GuiLayoutProfile
 from ..preferences import GuiPreferences
 from ..styles.colors import get_surface_colors
 from ..styles.fonts import FontConfig
@@ -71,6 +72,7 @@ class GuiAppWindow:
 
     def __init__(self, app_config: GuiAppConfig, font_config: FontConfig | None = None) -> None:
         self.app_config = app_config
+        self.layout_profile: GuiLayoutProfile = app_config.resolved_layout_profile
         self.preferences = app_config.preferences.normalized()
         # Compatibility: tools created before GuiPreferences may still pass only
         # ThemeConfig through GuiAppConfig. Honor that when preferences are left
@@ -100,7 +102,9 @@ class GuiAppWindow:
                 table_density=self.preferences.table_density,
                 surface_theme=self.preferences.surface_theme,
             ).normalized()
-        self.font_config = self.preferences.to_font_config()
+        self.font_config = self.preferences.to_font_config().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         # Runtime appearance is intentionally frozen after startup. Changing the
         # global CustomTkinter appearance while a complex app is already rendered
         # can freeze the window on some Windows environments. A new appearance
@@ -125,7 +129,12 @@ class GuiAppWindow:
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
 
-        self.sidebar = Sidebar(self.root, app_config, self.font_config)
+        self.sidebar = Sidebar(
+            self.root,
+            app_config,
+            self.font_config,
+            layout_profile=self.layout_profile,
+        )
         self.sidebar.grid(row=0, column=0, sticky="nsw")
 
         self.content_panel = ContentPanel(self.root)
@@ -145,7 +154,13 @@ class GuiAppWindow:
 
         self.progress_panel = ProgressPanel(self.content_panel.frame, self.font_config)
         self.progress_panel.apply_visual_preferences(self.font_config, self.preferences.color_theme, self.preferences.surface_theme, self._runtime_appearance_mode)
-        self.progress_panel.grid(row=self._progress_row, column=0, padx=20, pady=(0, 12), sticky="ew")
+        self.progress_panel.grid(
+            row=self._progress_row,
+            column=0,
+            padx=self.layout_profile.content_pad_x,
+            pady=(0, self.layout_profile.content_card_gap),
+            sticky="ew",
+        )
         self.progress_panel.hide()
 
         self.status_bar = StatusBar(self.content_panel.frame, self.font_config)
@@ -207,7 +222,9 @@ class GuiAppWindow:
         appearance_changed = requested_preferences.appearance_mode != self._runtime_appearance_mode
 
         self.preferences = requested_preferences
-        self.font_config = self.preferences.to_font_config()
+        self.font_config = self.preferences.to_font_config().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         # Deliberately do not call CustomTkinter appearance setters here. Live
         # theme switching can freeze the rendered window; appearance is applied
         # only during startup. Accent/base colors, font and density remain live-safe.
@@ -388,12 +405,23 @@ class GuiAppWindow:
 
     def add_sidebar_widget(self, widget: Any, **grid_options: Any) -> None:
         row = len(self.sidebar.controls_frame.winfo_children())
-        options = {"row": row, "column": 0, "pady": (0, 10), "sticky": "ew"}
+        options = {
+            "row": row,
+            "column": 0,
+            "pady": (0, self.layout_profile.widget_gap),
+            "sticky": "ew",
+        }
         options.update(grid_options)
         widget.grid(**options)
 
     def add_sidebar_section(self, title: str, subtitle: str = "") -> SidebarFormSection:
-        section = SidebarFormSection(self.sidebar.controls_frame, title, subtitle, self.font_config)
+        section = SidebarFormSection(
+            self.sidebar.controls_frame,
+            title,
+            subtitle,
+            self.font_config,
+            layout_profile=self.layout_profile,
+        )
         self.add_sidebar_widget(section)
         self.register_visual_component(section)
         return section
@@ -411,9 +439,26 @@ class GuiAppWindow:
         return logical_row + 1
 
     def add_content_card(self, title: str, subtitle: str = "", row_weight: int = 0) -> SectionCard:
-        card = SectionCard(self.content_panel.frame, title, subtitle, self.font_config)
+        card = SectionCard(
+            self.content_panel.frame,
+            title,
+            subtitle,
+            self.font_config,
+            layout_profile=self.layout_profile,
+        )
         grid_row = self._get_content_grid_row(self._content_row)
-        card.grid(row=grid_row, column=0, padx=20, pady=(20 if self._content_row == 0 else 0, 12), sticky="ew")
+        card.grid(
+            row=grid_row,
+            column=0,
+            padx=self.layout_profile.content_pad_x,
+            pady=(
+                self.layout_profile.content_pad_top
+                if self._content_row == 0
+                else 0,
+                self.layout_profile.content_card_gap,
+            ),
+            sticky="ew",
+        )
         if row_weight:
             self.content_panel.frame.grid_rowconfigure(grid_row, weight=row_weight)
         self._content_row += 1
@@ -451,7 +496,15 @@ class GuiAppWindow:
         buttons: Iterable[Mapping[str, Any]],
         commands: Mapping[str, Callable[[], None]],
     ) -> Any:
-        return self.register_visual_component(ButtonRow(parent, buttons, commands=commands, font_config=self.font_config))
+        return self.register_visual_component(
+            ButtonRow(
+                parent,
+                buttons,
+                commands=commands,
+                font_config=self.font_config,
+                layout_profile=self.layout_profile,
+            )
+        )
 
 
 def create_gui_app_window(app_config: GuiAppConfig, font_config: FontConfig | None = None) -> GuiAppWindow:

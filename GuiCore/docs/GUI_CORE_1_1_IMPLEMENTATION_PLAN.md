@@ -26,6 +26,8 @@ Ningún proyecto actual cambia de dependencia.
 
 ## Fase 1 — ResultsTable robusta
 
+Estado: **completada y validada en Windows (43/43 pruebas en el cierre de fase).**
+
 ### Trabajo
 
 - corregir `command=None`;
@@ -52,6 +54,8 @@ ShadowBackup.
 ---
 
 ## Fase 2 — Perfiles de layout
+
+Estado: **implementada en `1.1.0.dev1`; pendiente validación visual final en Windows.**
 
 ### Trabajo
 

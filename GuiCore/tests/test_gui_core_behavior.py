@@ -14,7 +14,12 @@ from gui_core import (
     ChoiceOption,
     DialogButton,
     DialogSpec,
+    COMFORTABLE_LAYOUT_PROFILE,
+    COMPACT_LAYOUT_PROFILE,
+    LAYOUT_PROFILE_NAMES,
+    STANDARD_LAYOUT_PROFILE,
     FontConfig,
+    GuiLayoutProfile,
     GuiAppConfig,
     WindowIconResult,
     GuiMenuItem,
@@ -51,6 +56,7 @@ from gui_core import (
     get_accent_colors,
     get_surface_colors,
     get_font_role_size,
+    get_layout_profile,
     get_results_density_row_height,
     get_table_colors,
     apply_window_icon,
@@ -59,6 +65,7 @@ from gui_core import (
     is_customtkinter_available,
     normalize_appearance_mode,
     normalize_dialog_kind,
+    normalize_layout_profile_name,
     normalize_table_density,
     normalize_window_size,
 )
@@ -99,6 +106,52 @@ class GuiCoreTests(unittest.TestCase):
         self.assertEqual(config.to_dict()["restart_delay_ms"], 350)
         self.assertIsNone(config.to_dict()["icon_path"])
         self.assertIsNone(config.to_dict()["icon_png_path"])
+
+    def test_layout_profile_names_and_aliases(self):
+        self.assertEqual(LAYOUT_PROFILE_NAMES, ("compact", "standard", "comfortable"))
+        self.assertEqual(normalize_layout_profile_name("Compacta"), "compact")
+        self.assertEqual(normalize_layout_profile_name("Cómoda"), "comfortable")
+        self.assertEqual(normalize_layout_profile_name("invalid"), "standard")
+
+    def test_layout_profiles_are_ordered_by_density(self):
+        self.assertLess(COMPACT_LAYOUT_PROFILE.control_height, STANDARD_LAYOUT_PROFILE.control_height)
+        self.assertLess(STANDARD_LAYOUT_PROFILE.control_height, COMFORTABLE_LAYOUT_PROFILE.control_height)
+        self.assertLess(COMPACT_LAYOUT_PROFILE.widget_gap, STANDARD_LAYOUT_PROFILE.widget_gap)
+        self.assertLess(STANDARD_LAYOUT_PROFILE.widget_gap, COMFORTABLE_LAYOUT_PROFILE.widget_gap)
+        self.assertEqual(STANDARD_LAYOUT_PROFILE.action_height, 34)
+        self.assertEqual(STANDARD_LAYOUT_PROFILE.sidebar_padding, 14)
+
+    def test_custom_layout_profile_is_json_safe(self):
+        custom = GuiLayoutProfile(
+            name="project_custom",
+            control_height=30,
+            action_height=36,
+        )
+        data = custom.to_dict()
+        self.assertEqual(data["name"], "project_custom")
+        self.assertEqual(data["control_height"], 30)
+        self.assertIs(get_layout_profile(custom), custom)
+
+    def test_invalid_custom_layout_profile_is_rejected(self):
+        with self.assertRaises(ValueError):
+            GuiLayoutProfile(name="", control_height=28)
+        with self.assertRaises(ValueError):
+            GuiLayoutProfile(name="invalid", control_height=0)
+
+    def test_gui_app_config_defaults_to_legacy_standard_layout(self):
+        config = GuiAppConfig(app_name="Tool")
+        self.assertEqual(config.resolved_layout_profile, STANDARD_LAYOUT_PROFILE)
+        self.assertEqual(config.to_dict()["layout_profile"]["name"], "standard")
+        compact = GuiAppConfig(app_name="Tool", layout_profile="compact")
+        self.assertEqual(compact.resolved_layout_profile, COMPACT_LAYOUT_PROFILE)
+
+    def test_font_config_applies_layout_offset_without_changing_default(self):
+        standard = FontConfig(size_option="Normal")
+        compact = standard.with_size_offset(COMPACT_LAYOUT_PROFILE.font_size_offset)
+        comfortable = standard.with_size_offset(COMFORTABLE_LAYOUT_PROFILE.font_size_offset)
+        self.assertEqual(standard.size("body"), 11)
+        self.assertEqual(compact.size("body"), 10)
+        self.assertEqual(comfortable.size("body"), 12)
 
     def test_restart_arguments_support_script_and_frozen_apps(self):
         script_args = build_restart_arguments(
@@ -458,7 +511,7 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
         self.assertEqual(loaded, GuiPreferences())
 
     def test_public_version_matches_current_development_line(self):
-        self.assertEqual(__version__, "1.1.0.dev0")
+        self.assertEqual(__version__, "1.1.0.dev1")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):

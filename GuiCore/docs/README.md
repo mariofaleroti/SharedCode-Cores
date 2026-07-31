@@ -30,3 +30,7 @@ Lectura recomendada para desarrollar GuiCore 1.1.0:
 
 Regla principal: GuiCore resuelve la experiencia visual común; cada herramienta
 conserva su lógica, configuración y contratos propios.
+
+## Implementación 1.1
+
+- `LAYOUT_PROFILES.md`

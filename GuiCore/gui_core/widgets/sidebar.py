@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable
 
 from ..app_config import GuiAppConfig, GuiMenuItem
 from ..dependencies import require_customtkinter
+from ..layout_profiles import GuiLayoutProfile, get_layout_profile
 from ..styles.colors import get_accent_colors, get_neutral_button_colors, get_surface_colors
 from ..styles.fonts import FontConfig
 
@@ -16,11 +17,17 @@ class Sidebar:
         parent: Any,
         app_config: GuiAppConfig,
         font_config: FontConfig | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
         self.app_config = app_config
-        self.font_config = font_config or FontConfig()
+        self.layout_profile = get_layout_profile(
+            layout_profile if layout_profile is not None else app_config.layout_profile
+        )
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
         self.actions: Dict[str, Callable[[], None]] = {}
         self.footer_buttons: Dict[str, Any] = {}
         self.footer_label = None
@@ -32,6 +39,13 @@ class Sidebar:
 
         self.controls_frame = ctk.CTkScrollableFrame(self.frame, fg_color="transparent")
         self.controls_frame.grid_columnconfigure(0, weight=1)
+        if self.layout_profile.sidebar_scrollbar_width is not None:
+            try:
+                self.controls_frame._scrollbar.configure(
+                    width=self.layout_profile.sidebar_scrollbar_width
+                )
+            except Exception:
+                pass
 
         self.footer_frame = ctk.CTkFrame(
             self.frame,
@@ -41,13 +55,31 @@ class Sidebar:
         self.footer_frame.grid_columnconfigure(0, weight=1)
 
         self._build_header()
-        self.controls_frame.grid(row=1, column=0, padx=14, pady=(8, 8), sticky="nsew")
+        self.controls_frame.grid(
+            row=1,
+            column=0,
+            padx=self.layout_profile.sidebar_padding,
+            pady=(
+                self.layout_profile.sidebar_controls_pad_top,
+                self.layout_profile.sidebar_controls_pad_bottom,
+            ),
+            sticky="nsew",
+        )
         self._build_footer(app_config.footer_items)
         self.footer_frame.grid(row=2, column=0, sticky="sew")
 
     def _build_header(self) -> None:
         self.header_frame = self.ctk.CTkFrame(self.frame, fg_color="transparent")
-        self.header_frame.grid(row=0, column=0, padx=18, pady=(24, 8), sticky="ew")
+        self.header_frame.grid(
+            row=0,
+            column=0,
+            padx=self.layout_profile.sidebar_header_pad_x,
+            pady=(
+                self.layout_profile.sidebar_header_pad_top,
+                self.layout_profile.sidebar_header_pad_bottom,
+            ),
+            sticky="ew",
+        )
         self.header_frame.grid_columnconfigure(0, weight=1)
 
         self.title_label = self.ctk.CTkLabel(
@@ -83,7 +115,16 @@ class Sidebar:
             text_color=("gray35", "gray70"),
             anchor="w",
         )
-        label.grid(row=0, column=0, padx=14, pady=(12, 6), sticky="ew")
+        label.grid(
+            row=0,
+            column=0,
+            padx=self.layout_profile.sidebar_padding,
+            pady=(
+                self.layout_profile.sidebar_footer_label_pad_top,
+                self.layout_profile.sidebar_footer_label_pad_bottom,
+            ),
+            sticky="ew",
+        )
         self.footer_label = label
 
         button_options = {
@@ -91,7 +132,7 @@ class Sidebar:
             "fg_color": ("gray75", "gray28"),
             "hover_color": ("gray68", "gray35"),
             "text_color": ("gray10", "gray95"),
-            "height": 34,
+            "height": self.layout_profile.menu_button_height,
             "anchor": "w",
         }
 
@@ -104,7 +145,13 @@ class Sidebar:
                 command=lambda key=item.key: self._execute_action(key),
                 **button_options,
             )
-            button.grid(row=row, column=0, padx=14, pady=(0, 7), sticky="ew")
+            button.grid(
+                row=row,
+                column=0,
+                padx=self.layout_profile.sidebar_padding,
+                pady=(0, self.layout_profile.sidebar_footer_button_gap),
+                sticky="ew",
+            )
             self.footer_buttons[item.key] = button
 
     def _execute_action(self, key: str) -> None:

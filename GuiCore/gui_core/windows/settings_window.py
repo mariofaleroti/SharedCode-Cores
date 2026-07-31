@@ -18,6 +18,12 @@ from ..styles.colors import get_accent_colors, get_control_colors, get_surface_c
 from ..styles.fonts import APP_FONT_FAMILY_OPTIONS, APP_FONT_SIZE_OPTIONS, FontConfig
 from ..styles.table_style import RESULTS_DENSITY_OPTIONS
 from ..widgets.form_controls import ChoiceOption, LabeledComboBox
+from ..visual_preferences import (
+    VISUAL_PREFERENCES_ADVANCED,
+    VISUAL_PREFERENCES_BASIC,
+    VISUAL_PREFERENCES_NONE,
+    normalize_visual_preferences_mode,
+)
 from .secondary_window import SecondaryWindow, SecondaryWindowConfig
 
 PreferencesCallback = Callable[[GuiPreferences], None]
@@ -146,18 +152,27 @@ class SettingsWindow(SecondaryWindow):
         preferences: GuiPreferences | None = None,
         font_config: FontConfig | None = None,
         on_apply: PreferencesCallback | None = None,
+        preference_mode: str = VISUAL_PREFERENCES_ADVANCED,
     ) -> None:
         self.preferences = (preferences or GuiPreferences()).normalized()
         self.on_apply = on_apply
+        self.preference_mode = normalize_visual_preferences_mode(preference_mode)
+        if self.preference_mode == VISUAL_PREFERENCES_NONE:
+            raise ValueError("The none preference mode does not create a settings window.")
+        is_basic = self.preference_mode == VISUAL_PREFERENCES_BASIC
         super().__init__(
             parent,
             SecondaryWindowConfig(
                 title="Configuración",
-                subtitle="Preferencias comunes de la interfaz.",
-                width=760,
-                height=600,
-                min_width=700,
-                min_height=520,
+                subtitle=(
+                    "Preferencias visuales esenciales."
+                    if is_basic
+                    else "Preferencias visuales avanzadas."
+                ),
+                width=680 if is_basic else 760,
+                height=500 if is_basic else 600,
+                min_width=640 if is_basic else 700,
+                min_height=440 if is_basic else 520,
                 modal=True,
                 resizable=(False, False),
             ),
@@ -182,13 +197,125 @@ class SettingsWindow(SecondaryWindow):
         self.tabs.grid(row=0, column=0, sticky="nsew", padx=12, pady=10)
 
         visual_tab = self.tabs.add("Visual")
-        general_tab = self.tabs.add("General")
         visual_tab.grid_columnconfigure(0, weight=1)
-        general_tab.grid_columnconfigure(0, weight=1)
 
-        self._build_visual_tab(visual_tab)
-        self._build_general_tab(general_tab)
+        if self.preference_mode == VISUAL_PREFERENCES_BASIC:
+            self._build_basic_visual_tab(visual_tab)
+        else:
+            general_tab = self.tabs.add("General")
+            general_tab.grid_columnconfigure(0, weight=1)
+            self._build_visual_tab(visual_tab)
+            self._build_general_tab(general_tab)
         self.tabs.set("Visual")
+
+    def _build_basic_visual_tab(self, parent: Any) -> None:
+        parent.grid_columnconfigure(0, weight=1)
+        parent.grid_rowconfigure(0, weight=1)
+
+        self.visual_scroll = self.ctk.CTkScrollableFrame(
+            parent,
+            fg_color="transparent",
+        )
+        self.visual_scroll.grid(
+            row=0,
+            column=0,
+            sticky="nsew",
+            padx=6,
+            pady=4,
+        )
+        self.visual_scroll.grid_columnconfigure(0, weight=1)
+
+        self.typography_group = self.ctk.CTkFrame(
+            self.visual_scroll,
+            corner_radius=10,
+        )
+        self.typography_group.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=8,
+            pady=(0, 8),
+        )
+        self.typography_group.grid_columnconfigure((0, 1), weight=1, uniform="basic_visual")
+
+        self.typography_title = self.ctk.CTkLabel(
+            self.typography_group,
+            text="Tema, fuente y densidad",
+            font=self.font_config.tuple("section", "bold"),
+            anchor="w",
+        )
+        self.typography_title.grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            padx=12,
+            pady=(10, 6),
+        )
+
+        self.appearance_combo = LabeledComboBox(
+            self.typography_group,
+            "Tema (reinicia la app)",
+            APPEARANCE_LABEL_OPTIONS,
+            default_value=normalize_appearance_label(
+                self.preferences.appearance_mode
+            ),
+            font_config=self.font_config,
+        )
+        self.appearance_combo.grid(
+            row=1,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            padx=12,
+            pady=(0, 8),
+        )
+
+        self.font_family_combo = LabeledComboBox(
+            self.typography_group,
+            "Fuente",
+            APP_FONT_FAMILY_OPTIONS,
+            default_value=self.preferences.font_family,
+            font_config=self.font_config,
+        )
+        self.font_family_combo.grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            padx=(12, 6),
+            pady=(0, 8),
+        )
+
+        self.font_size_combo = LabeledComboBox(
+            self.typography_group,
+            "Tamaño",
+            APP_FONT_SIZE_OPTIONS,
+            default_value=self.preferences.font_size,
+            font_config=self.font_config,
+        )
+        self.font_size_combo.grid(
+            row=2,
+            column=1,
+            sticky="ew",
+            padx=(6, 12),
+            pady=(0, 8),
+        )
+
+        self.table_density_combo = LabeledComboBox(
+            self.typography_group,
+            "Densidad de tabla",
+            RESULTS_DENSITY_OPTIONS,
+            default_value=self.preferences.table_density,
+            font_config=self.font_config,
+        )
+        self.table_density_combo.grid(
+            row=3,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            padx=12,
+            pady=(0, 10),
+        )
 
     def _build_visual_tab(self, parent: Any) -> None:
         parent.grid_columnconfigure(0, weight=1)
@@ -420,10 +547,20 @@ class SettingsWindow(SecondaryWindow):
                     pass
 
     def collect_preferences(self) -> GuiPreferences:
+        color_control = getattr(self, "color_theme_combo", None)
+        surface_control = getattr(self, "surface_theme_combo", None)
         return GuiPreferences(
             appearance_mode=self.appearance_combo.get_label(),
-            color_theme=str(self.color_theme_combo.get_value()),
-            surface_theme=str(self.surface_theme_combo.get_value()),
+            color_theme=(
+                str(color_control.get_value())
+                if color_control is not None
+                else self.preferences.color_theme
+            ),
+            surface_theme=(
+                str(surface_control.get_value())
+                if surface_control is not None
+                else self.preferences.surface_theme
+            ),
             font_family=self.font_family_combo.get_label(),
             font_size=self.font_size_combo.get_label(),
             table_density=self.table_density_combo.get_label(),
@@ -450,5 +587,15 @@ def show_settings_window(
     preferences: GuiPreferences | None = None,
     font_config: FontConfig | None = None,
     on_apply: PreferencesCallback | None = None,
-) -> SettingsWindow:
-    return SettingsWindow(parent, preferences=preferences, font_config=font_config, on_apply=on_apply)
+    preference_mode: str = VISUAL_PREFERENCES_ADVANCED,
+) -> SettingsWindow | None:
+    resolved_mode = normalize_visual_preferences_mode(preference_mode)
+    if resolved_mode == VISUAL_PREFERENCES_NONE:
+        return None
+    return SettingsWindow(
+        parent,
+        preferences=preferences,
+        font_config=font_config,
+        on_apply=on_apply,
+        preference_mode=resolved_mode,
+    )

@@ -95,3 +95,12 @@
 
 
 | `window_icon.py` | Aplica iconos de ventana Windows/Linux y permite herencia desde ventana principal hacia secundarias. |
+
+
+## Visual preference modes
+
+| Modo | Alcance |
+|---|---|
+| `none` | Sin ventana común de preferencias. |
+| `basic` | Tema, fuente, tamaño y densidad. |
+| `advanced` | Preferencias visuales completas. |

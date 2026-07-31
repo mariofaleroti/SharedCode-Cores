@@ -86,8 +86,9 @@ class Sidebar:
                 sticky="ew",
             )
 
-        if app_config.footer_items:
-            self._build_footer(app_config.footer_items)
+        footer_items = app_config.resolved_footer_items
+        if footer_items:
+            self._build_footer(footer_items)
             self.footer_frame.grid(
                 row=3,
                 column=0,

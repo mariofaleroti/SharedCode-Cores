@@ -430,3 +430,12 @@ La demo usa `examples/demo_gui_preferences.json` para mostrar ese flujo. Una her
 - La ventana de Configuración usa barras compactas de paleta, sin dependencia obligatoria de `CTkColorPicker`, para mantener GuiCore portable.
 
 - Barra de progreso indeterminada reutilizable para procesos cuyo total todavía no se conoce.
+
+
+## Showcase GuiCore 1.1
+
+```powershell
+python GuiCore/examples/guicore_1_1_showcase.py --preferences basic
+```
+
+Modos disponibles: `none`, `basic`, `advanced`.

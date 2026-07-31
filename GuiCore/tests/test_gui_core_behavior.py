@@ -17,6 +17,10 @@ from gui_core import (
     MetricItem,
     TooltipSpec,
     VALID_STATE_KINDS,
+    VISUAL_PREFERENCES_ADVANCED,
+    VISUAL_PREFERENCES_BASIC,
+    VISUAL_PREFERENCES_NONE,
+    VISUAL_PREFERENCE_MODES,
     DialogButton,
     DialogSpec,
     COMFORTABLE_LAYOUT_PROFILE,
@@ -81,6 +85,7 @@ from gui_core import (
     normalize_dialog_kind,
     normalize_layout_profile_name,
     normalize_table_density,
+    normalize_visual_preferences_mode,
     normalize_window_size,
 )
 from gui_core.widgets.progress_panel import calculate_progress_value
@@ -351,6 +356,56 @@ class GuiCoreTests(unittest.TestCase):
             MetricItem("", "Estado", "OK")
         with self.assertRaises(ValueError):
             MetricItem("status", "", "OK")
+
+
+    def test_visual_preferences_modes_are_normalized(self):
+        self.assertEqual(
+            VISUAL_PREFERENCE_MODES,
+            ("none", "basic", "advanced"),
+        )
+        self.assertEqual(
+            normalize_visual_preferences_mode("Básica"),
+            VISUAL_PREFERENCES_BASIC,
+        )
+        self.assertEqual(
+            normalize_visual_preferences_mode("none"),
+            VISUAL_PREFERENCES_NONE,
+        )
+        self.assertEqual(
+            normalize_visual_preferences_mode("unknown"),
+            VISUAL_PREFERENCES_ADVANCED,
+        )
+
+    def test_none_visual_preferences_remove_settings_action(self):
+        config = GuiAppConfig(
+            app_name="Tool",
+            visual_preferences="none",
+        )
+        self.assertEqual(
+            config.resolved_visual_preferences,
+            VISUAL_PREFERENCES_NONE,
+        )
+        self.assertNotIn(
+            "settings",
+            [item.key for item in config.resolved_footer_items],
+        )
+        data = config.to_dict()
+        self.assertEqual(data["visual_preferences"], "none")
+        self.assertNotIn(
+            "settings",
+            [item["command_key"] for item in data["footer_items"]],
+        )
+
+    def test_basic_and_advanced_preferences_keep_settings_action(self):
+        for mode in (VISUAL_PREFERENCES_BASIC, VISUAL_PREFERENCES_ADVANCED):
+            config = GuiAppConfig(
+                app_name="Tool",
+                visual_preferences=mode,
+            )
+            self.assertIn(
+                "settings",
+                [item.key for item in config.resolved_footer_items],
+            )
 
     def test_restart_arguments_support_script_and_frozen_apps(self):
         script_args = build_restart_arguments(
@@ -710,7 +765,7 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
         self.assertEqual(loaded, GuiPreferences())
 
     def test_public_version_matches_current_development_line(self):
-        self.assertEqual(__version__, "1.1.0.dev6")
+        self.assertEqual(__version__, "1.1.0.dev7")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):
@@ -723,6 +778,8 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
             "docs/QUICKSTART.md",
             "docs/COMPONENT_MAP.md",
             "docs/APP_TEMPLATE.md",
+            "docs/GUI_CORE_1_1_SHOWCASE.md",
+            "docs/MIGRATION_1_0_TO_1_1.md",
         ]
         for relative_path in expected:
             self.assertTrue((project_root / relative_path).exists(), relative_path)

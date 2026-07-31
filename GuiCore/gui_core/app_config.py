@@ -7,6 +7,10 @@ from .constants import DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH
 from .layout_profiles import GuiLayoutProfile, get_layout_profile
 from .models import ThemeConfig, WindowConfig
 from .preferences import GuiPreferences
+from .visual_preferences import (
+    VISUAL_PREFERENCES_NONE,
+    normalize_visual_preferences_mode,
+)
 
 
 @dataclass(frozen=True)
@@ -127,6 +131,7 @@ class GuiAppConfig:
     icon_png_path: str | None = None
     theme_config: ThemeConfig = field(default_factory=ThemeConfig)
     preferences: GuiPreferences = field(default_factory=GuiPreferences)
+    visual_preferences: str = "advanced"
     help_text: str = ""
     about_text: str = ""
     footer_items: Tuple[GuiMenuItem, ...] = field(
@@ -141,6 +146,17 @@ class GuiAppConfig:
     @property
     def resolved_layout_profile(self) -> GuiLayoutProfile:
         return get_layout_profile(self.layout_profile)
+
+    @property
+    def resolved_visual_preferences(self) -> str:
+        return normalize_visual_preferences_mode(self.visual_preferences)
+
+    @property
+    def resolved_footer_items(self) -> Tuple[GuiMenuItem, ...]:
+        items = tuple(self.footer_items)
+        if self.resolved_visual_preferences == VISUAL_PREFERENCES_NONE:
+            return tuple(item for item in items if item.key != "settings")
+        return items
 
     @property
     def window_title(self) -> str:
@@ -177,7 +193,8 @@ class GuiAppConfig:
             "icon_png_path": self.icon_png_path,
             "theme_config": self.theme_config.to_dict(),
             "preferences": self.preferences.to_dict(),
+            "visual_preferences": self.resolved_visual_preferences,
             "help_text": self.help_text,
             "about_text": self.about_text,
-            "footer_items": [item.to_dict() for item in self.footer_items],
+            "footer_items": [item.to_dict() for item in self.resolved_footer_items],
         }

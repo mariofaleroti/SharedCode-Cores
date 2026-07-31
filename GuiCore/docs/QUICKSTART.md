@@ -156,3 +156,32 @@ Si el usuario cambia `Tema`, GuiCore guarda la preferencia y reinicia la app aut
 ```bash
 python examples/smartfilter_style_demo.py
 ```
+
+
+---
+
+## Inicio rápido GuiCore 1.1
+
+```python
+from gui_core import GuiAppConfig, GuiAppWindow, SidebarConfig
+
+app = GuiAppWindow(
+    GuiAppConfig(
+        app_name="ApplicationDemo",
+        app_version="1.1.0",
+        layout_profile="compact",
+        visual_preferences="basic",
+        sidebar_config=SidebarConfig(
+            footer_columns=2,
+            primary_action_columns=2,
+        ),
+    )
+)
+app.mainloop()
+```
+
+La aplicación oficial de referencia está en:
+
+```text
+examples/guicore_1_1_showcase.py
+```

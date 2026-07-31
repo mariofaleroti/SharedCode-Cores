@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Tuple
 from ..dependencies import require_customtkinter
 from ..styles.colors import get_surface_colors
 from ..styles.fonts import FontConfig
+from ..tk_lifecycle import destroy_widget_tree, widget_exists
 from ..widgets.form_controls import ActionButton
 from .window_icon import apply_window_icon, get_window_icon_metadata, set_window_icon_metadata
 
@@ -82,6 +83,8 @@ class SecondaryWindow:
     ) -> None:
         self.parent = parent
         self.config = config
+        self._closed = False
+        self._lift_after_id: str | None = None
         self.font_config = font_config or FontConfig()
         self.ctk = require_customtkinter()
         width, height = normalize_secondary_window_size(config.width, config.height, config.min_width, config.min_height)
@@ -142,11 +145,23 @@ class SecondaryWindow:
 
         self.center_over_parent()
         self.window.protocol("WM_DELETE_WINDOW", self.close)
-        self.window.after(10, self.window.lift)
+        self._lift_after_id = self.window.after(
+            10,
+            self._lift_window,
+        )
 
         if config.modal:
             self.window.grab_set()
             self.window.focus_force()
+
+    def _lift_window(self) -> None:
+        self._lift_after_id = None
+        if self._closed or not widget_exists(self.window):
+            return
+        try:
+            self.window.lift()
+        except Exception:
+            pass
 
     def center_over_parent(self) -> None:
         try:
@@ -207,8 +222,18 @@ class SecondaryWindow:
             self.parent.wait_window(self.window)
 
     def close(self) -> None:
-        try:
-            self.window.grab_release()
-        except Exception:
-            pass
-        self.window.destroy()
+        if self._closed:
+            return
+        self._closed = True
+
+        if self._lift_after_id is not None:
+            try:
+                self.window.after_cancel(self._lift_after_id)
+            except Exception:
+                pass
+            self._lift_after_id = None
+
+        destroy_widget_tree(
+            self.window,
+            release_grab=True,
+        )

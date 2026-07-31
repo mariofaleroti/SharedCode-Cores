@@ -23,7 +23,9 @@ from ..layout_profiles import GuiLayoutProfile
 from ..preferences import GuiPreferences
 from ..styles.colors import get_surface_colors
 from ..styles.fonts import FontConfig
+from ..tk_lifecycle import destroy_widget_tree
 from ..theme import apply_runtime_theme, apply_theme
+from ..visual_preferences import VISUAL_PREFERENCES_NONE
 from ..windows import apply_window_icon, set_window_icon_metadata, show_settings_window
 from ..widgets import (
     ButtonRow,
@@ -82,41 +84,6 @@ def restart_current_process() -> None:
         os._exit(0)
 
 
-def _cancel_pending_after_callbacks(root: Any) -> None:
-    """Cancel Tk callbacks that would otherwise run after window teardown."""
-
-    if root is None:
-        return
-
-    for _ in range(4):
-        try:
-            pending = root.tk.call("after", "info")
-        except Exception:
-            return
-
-        if isinstance(pending, str):
-            try:
-                callback_ids = tuple(root.tk.splitlist(pending))
-            except Exception:
-                callback_ids = (pending,) if pending else ()
-        else:
-            try:
-                callback_ids = tuple(pending)
-            except TypeError:
-                callback_ids = ()
-
-        if not callback_ids:
-            return
-
-        for callback_id in callback_ids:
-            try:
-                root.after_cancel(callback_id)
-            except Exception:
-                try:
-                    root.tk.call("after", "cancel", callback_id)
-                except Exception:
-                    pass
-
 
 class GuiAppWindow:
     """Reusable application shell for CustomTkinter tools.
@@ -129,6 +96,7 @@ class GuiAppWindow:
         self.app_config = app_config
         self.layout_profile: GuiLayoutProfile = app_config.resolved_layout_profile
         self.preferences = app_config.preferences.normalized()
+        self.visual_preferences_mode = app_config.resolved_visual_preferences
         # Compatibility: tools created before GuiPreferences may still pass only
         # ThemeConfig through GuiAppConfig. Honor that when preferences are left
         # at their defaults.
@@ -242,7 +210,8 @@ class GuiAppWindow:
         self.sidebar.set_action("exit", self.destroy)
         self.sidebar.set_action("about", self.show_about)
         self.sidebar.set_action("help", self.show_help)
-        self.sidebar.set_action("settings", self.show_settings)
+        if self.visual_preferences_mode != VISUAL_PREFERENCES_NONE:
+            self.sidebar.set_action("settings", self.show_settings)
 
 
     def _apply_root_surface(self) -> None:
@@ -272,11 +241,14 @@ class GuiAppWindow:
             pass
 
     def show_settings(self) -> Any:
+        if self.visual_preferences_mode == VISUAL_PREFERENCES_NONE:
+            return None
         return show_settings_window(
             self.root,
             preferences=self.preferences,
             font_config=self.font_config,
             on_apply=self.apply_preferences,
+            preference_mode=self.visual_preferences_mode,
         )
 
     def apply_preferences(self, preferences: GuiPreferences) -> None:
@@ -457,14 +429,6 @@ class GuiAppWindow:
         self.root.mainloop()
 
     def destroy(self) -> None:
-        try:
-            exists = bool(self.root.winfo_exists())
-        except Exception:
-            exists = False
-
-        if not exists:
-            return
-
         for runner in list(self._task_runners):
             try:
                 runner.destroy()
@@ -473,16 +437,10 @@ class GuiAppWindow:
         self._task_runners.clear()
         self._active_tasks.clear()
 
-        _cancel_pending_after_callbacks(self.root)
-        try:
-            self.root.quit()
-        except Exception:
-            pass
-        _cancel_pending_after_callbacks(self.root)
-        try:
-            self.root.destroy()
-        except Exception:
-            pass
+        destroy_widget_tree(
+            self.root,
+            quit_mainloop=True,
+        )
 
     def set_sidebar_action(self, key: str, callback: Callable[[], None]) -> None:
         self.sidebar.set_action(key, callback)

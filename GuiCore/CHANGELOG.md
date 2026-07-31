@@ -80,6 +80,15 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - `GuiAppWindow.start_task` integra progreso, cancelación, controles y claves de tarea.
 - El cierre de ventana cancela y desconecta runners activos.
 - La línea de desarrollo avanza a `1.1.0.dev6`.
+- Se implementaron los modos de preferencias visuales `none`, `basic` y `advanced`.
+- El modo `none` elimina la acción común de configuración del footer.
+- El modo `basic` limita la ventana a tema, fuente, tamaño y densidad.
+- Se agregó `examples/guicore_1_1_showcase.py` como integración neutral oficial.
+- Se agregaron quickstart actualizado y guía de migración explícita 1.0 → 1.1.
+- La línea de desarrollo avanza a `1.1.0.dev7`.
+- Corrección dev7: el cierre de ventanas secundarias cancela callbacks `after` mediante su widget propietario.
+- Corrección dev7: se evita la doble eliminación de comandos Tcl en Python 3.13.
+- Corrección dev7: `SecondaryWindow.close()` es idempotente y administra su callback de elevación.
 
 ### Documentación
 

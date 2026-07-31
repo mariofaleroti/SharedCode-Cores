@@ -44,3 +44,7 @@ conserva su lógica, configuración y contratos propios.
 - `METRICS_AND_TOOLTIPS.md`
 
 - `BACKGROUND_TASKS.md`
+
+- `GUI_CORE_1_1_SHOWCASE.md`
+
+- `MIGRATION_1_0_TO_1_1.md`

@@ -55,7 +55,7 @@ GuiCore 1.1.0 define un contrato nuevo para proyectos que migren explícitamente
 
 ```python
 layout_profile = "standard"
-visual_preferences = "advanced"
+visual_preferences="advanced"
 sidebar_footer_layout = "single_column"
 ```
 
@@ -402,7 +402,7 @@ GuiCore no interpreta `result`.
 
 ## 12. Preferencias visuales
 
-Los colores se mantienen, pero dejan de ser obligatoriamente protagonistas.
+GuiCore 1.1 implementa tres niveles de preferencias visuales.
 
 ```text
 none
@@ -435,7 +435,7 @@ El valor predeterminado del contrato 1.1 será `advanced`.
 
 ---
 
-## 13. API de aplicación prevista
+## 13. API pública de aplicación
 
 ```python
 app = GuiAppWindow(
@@ -444,10 +444,9 @@ app = GuiAppWindow(
         app_version="1.1.0",
         layout_profile="compact",
         visual_preferences="basic",
-        sidebar=SidebarConfig(
-            fixed_actions=True,
+        sidebar_config=SidebarConfig(
+            primary_actions_visible=True,
             footer_columns=2,
-            compact_footer=True,
         ),
     )
 )

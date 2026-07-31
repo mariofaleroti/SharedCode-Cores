@@ -183,6 +183,8 @@ Estado: **implementada en `1.1.0.dev6`: runner seguro, progreso, cancelación, t
 
 ## Fase 7 — Demo y documentación
 
+Estado: **completada en `1.1.0.dev7`: showcase neutral, modos de preferencias, quickstart y guía de migración.**
+
 ### Demo oficial
 
 ```text
@@ -199,7 +201,7 @@ Debe demostrar:
 - métricas;
 - tabla con estados;
 - tarea simulada cancelable;
-- preferencias basic/advanced.
+- preferencias none/basic/advanced.
 
 ### Documentación
 
@@ -310,3 +312,8 @@ Ese commit debe contener solamente:
 - changelog de desarrollo.
 
 No debe incluir todavía perfiles, sidebar ni nuevos widgets.
+
+
+### Corrección dev7 de ciclo de vida Tk
+
+Las ventanas secundarias cancelan cada callback `after` desde el widget propietario antes de destruir el árbol visual. Esto evita la doble eliminación de comandos Tcl observada con Python 3.13.

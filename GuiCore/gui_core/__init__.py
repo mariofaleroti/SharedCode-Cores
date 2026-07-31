@@ -163,6 +163,13 @@ from .widgets import (
     row_values_to_mapping,
     set_component_enabled,
 )
+from .visual_preferences import (
+    VISUAL_PREFERENCES_ADVANCED,
+    VISUAL_PREFERENCES_BASIC,
+    VISUAL_PREFERENCES_NONE,
+    VISUAL_PREFERENCE_MODES,
+    normalize_visual_preferences_mode,
+)
 from .window import create_main_window
 
 __all__ = [
@@ -173,6 +180,10 @@ __all__ = [
     "DEFAULT_SURFACE_THEME",
     "DEFAULT_WINDOW_HEIGHT",
     "DEFAULT_WINDOW_WIDTH",
+    "VISUAL_PREFERENCES_ADVANCED",
+    "VISUAL_PREFERENCES_BASIC",
+    "VISUAL_PREFERENCES_NONE",
+    "VISUAL_PREFERENCE_MODES",
     "COMFORTABLE_LAYOUT_PROFILE",
     "COMPACT_LAYOUT_PROFILE",
     "LAYOUT_PROFILE_NAMES",
@@ -327,6 +338,7 @@ __all__ = [
     "normalize_surface_color",
     "normalize_appearance_mode",
     "normalize_customtkinter_color_theme",
+    "normalize_visual_preferences_mode",
     "normalize_window_size",
     "require_customtkinter",
     "restart_current_process",

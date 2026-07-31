@@ -73,6 +73,13 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - `GuiAppWindow` expone `create_metric_strip` y `add_tooltip`.
 - La Fase 5 queda completa con métricas y ayudas contextuales genéricas.
 - La línea de desarrollo avanza a `1.1.0.dev5`.
+- Se agregó `GuiTaskRunner` para workers cooperativos sin acceso a Tk.
+- Se agregaron `TaskContext`, `TaskProgress`, `TaskError`, `TaskResult` y `CancellationToken`.
+- El progreso aplica throttling y coalescencia por ciclo de polling.
+- `ProgressPanel` admite cancelación opcional.
+- `GuiAppWindow.start_task` integra progreso, cancelación, controles y claves de tarea.
+- El cierre de ventana cancela y desconecta runners activos.
+- La línea de desarrollo avanza a `1.1.0.dev6`.
 
 ### Documentación
 

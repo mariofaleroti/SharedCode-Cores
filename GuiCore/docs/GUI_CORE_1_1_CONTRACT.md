@@ -487,6 +487,6 @@ GuiCore 1.1.0 no se considera listo hasta cumplir:
 5. Los controles compactos no requieren clases privadas del consumidor.
 6. Las tarjetas plegables administran su propio ciclo visual.
 7. Tooltips y métricas son componentes genéricos.
-8. Las operaciones largas no actualizan Tk desde el worker.
+8. Las operaciones largas no actualizan Tk desde el worker; GuiTaskRunner entrega callbacks en el hilo principal.
 9. Wheel, exports y documentación corresponden al contrato 1.1.
 10. Ningún componente nuevo contiene lógica de un proyecto consumidor.

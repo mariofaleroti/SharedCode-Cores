@@ -33,6 +33,7 @@
 | `MetricCard` | Presentación de una métrica individual. |
 | `MetricStrip` | Distribución declarativa de varias métricas. |
 | `WidgetTooltip` | Ayuda contextual genérica para widgets. |
+| `GuiTaskRunner` | Operaciones cancelables fuera del hilo de interfaz. |
 
 ## Resultados
 

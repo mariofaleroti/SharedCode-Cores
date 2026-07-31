@@ -157,6 +157,8 @@ Estado: **Fase 5 completa en `1.1.0.dev5`: tarjetas flexibles, colapso, estados,
 
 ## Fase 6 — Operaciones largas
 
+Estado: **implementada en `1.1.0.dev6`: runner seguro, progreso, cancelación, throttling, controles y protección contra duplicados.**
+
 ### Trabajo
 
 - crear `GuiTaskRunner`;

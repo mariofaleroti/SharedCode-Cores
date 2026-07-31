@@ -30,6 +30,7 @@ from ..widgets import (
     CardHeaderAction,
     CollapsibleSectionCard,
     ContentPanel,
+    GuiTaskRunner,
     MetricItem,
     MetricStrip,
     ProgressPanel,
@@ -38,6 +39,10 @@ from ..widgets import (
     Sidebar,
     SidebarFormSection,
     StatusBar,
+    TaskContext,
+    TaskError,
+    TaskProgress,
+    TaskResult,
     WidgetTooltip,
 )
 
@@ -166,8 +171,11 @@ class GuiAppWindow:
         self._visual_components: list[Any] = []
         self._preference_callbacks: list[Callable[[GuiPreferences], None]] = []
         self._restart_scheduled = False
+        self._task_runners: list[GuiTaskRunner] = []
+        self._active_tasks: dict[str, GuiTaskRunner] = {}
 
         self.root = self.ctk.CTk()
+        self.root.protocol("WM_DELETE_WINDOW", self.destroy)
         self._apply_root_surface()
         self.root.title(app_config.window_title)
         set_window_icon_metadata(self.root, app_config.icon_path, app_config.icon_png_path)
@@ -202,7 +210,11 @@ class GuiAppWindow:
         self._progress_row = 1
         self._status_row = 100
 
-        self.progress_panel = ProgressPanel(self.content_panel.frame, self.font_config)
+        self.progress_panel = ProgressPanel(
+            self.content_panel.frame,
+            self.font_config,
+            layout_profile=self.layout_profile,
+        )
         self.progress_panel.apply_visual_preferences(self.font_config, self.preferences.color_theme, self.preferences.surface_theme, self._runtime_appearance_mode)
         self.progress_panel.grid(
             row=self._progress_row,
@@ -227,7 +239,7 @@ class GuiAppWindow:
         return getattr(self.root, name)
 
     def _register_default_actions(self) -> None:
-        self.sidebar.set_action("exit", self.root.destroy)
+        self.sidebar.set_action("exit", self.destroy)
         self.sidebar.set_action("about", self.show_about)
         self.sidebar.set_action("help", self.show_help)
         self.sidebar.set_action("settings", self.show_settings)
@@ -339,10 +351,7 @@ class GuiAppWindow:
             self.root.update_idletasks()
         except Exception:
             pass
-        try:
-            self.root.destroy()
-        except Exception:
-            pass
+        self.destroy()
         restart_current_process()
 
     def register_results_table(self, table: ResultsTable) -> ResultsTable:
@@ -455,6 +464,14 @@ class GuiAppWindow:
 
         if not exists:
             return
+
+        for runner in list(self._task_runners):
+            try:
+                runner.destroy()
+            except Exception:
+                pass
+        self._task_runners.clear()
+        self._active_tasks.clear()
 
         _cancel_pending_after_callbacks(self.root)
         try:
@@ -647,6 +664,131 @@ class GuiAppWindow:
             )
         )
 
+
+    def create_task_runner(
+        self,
+        *,
+        poll_interval_ms: int = 40,
+        progress_interval_seconds: float = 0.05,
+    ) -> GuiTaskRunner:
+        runner = GuiTaskRunner(
+            self.root,
+            poll_interval_ms=poll_interval_ms,
+            progress_interval_seconds=progress_interval_seconds,
+        )
+        self._task_runners.append(runner)
+        return runner
+
+    def start_task(
+        self,
+        worker: Callable[[TaskContext], Any],
+        *,
+        task_key: str = "default",
+        name: str = "task",
+        start_message: str = "Preparando...",
+        success_message: str = "Finalizado correctamente",
+        cancelled_message: str = "Operación cancelada",
+        error_message: str = "La operación no pudo completarse",
+        indeterminate: bool = False,
+        cancellable: bool = True,
+        disable_while_running: Iterable[Any] = (),
+        poll_interval_ms: int = 40,
+        progress_interval_seconds: float = 0.05,
+        on_progress: Callable[[TaskProgress], None] | None = None,
+        on_success: Callable[[Any], None] | None = None,
+        on_error: Callable[[TaskError], None] | None = None,
+        on_cancelled: Callable[[TaskResult], None] | None = None,
+        on_finished: Callable[[TaskResult], None] | None = None,
+    ) -> GuiTaskRunner:
+        key = str(task_key or "default")
+        existing = self._active_tasks.get(key)
+        if existing is not None and existing.is_active:
+            raise RuntimeError(f"Task already active: {key}")
+
+        runner = self.create_task_runner(
+            poll_interval_ms=poll_interval_ms,
+            progress_interval_seconds=progress_interval_seconds,
+        )
+        self._active_tasks[key] = runner
+
+        def started_callback(_runner: GuiTaskRunner) -> None:
+            self.progress_panel.set_cancel_action(
+                runner.cancel if cancellable else None
+            )
+            if indeterminate:
+                self.progress_panel.show_indeterminate(
+                    start_message,
+                    cancelable=cancellable,
+                )
+            else:
+                self.progress_panel.show(
+                    start_message,
+                    0.0,
+                    cancelable=cancellable,
+                )
+            self.set_status(start_message)
+
+        def progress_callback(progress: TaskProgress) -> None:
+            if progress.indeterminate or float(progress.total) <= 0:
+                self.progress_panel.show_indeterminate(
+                    progress.message or start_message,
+                    cancelable=cancellable,
+                )
+            else:
+                self.progress_panel.update(
+                    progress.current,
+                    progress.total,
+                    progress.unit,
+                    progress.message or None,
+                )
+            if callable(on_progress):
+                on_progress(progress)
+
+        def success_callback(value: Any) -> None:
+            self.progress_panel.complete(success_message)
+            self.set_status(success_message)
+            if callable(on_success):
+                on_success(value)
+
+        def error_callback(error: TaskError) -> None:
+            self.progress_panel.show(error_message, 0.0, cancelable=False)
+            self.set_status(f"{error_message}: {error.message}")
+            if callable(on_error):
+                on_error(error)
+
+        def cancelled_callback(result: TaskResult) -> None:
+            self.progress_panel.show(
+                cancelled_message,
+                0.0,
+                cancelable=False,
+            )
+            self.set_status(cancelled_message)
+            if callable(on_cancelled):
+                on_cancelled(result)
+
+        def finished_callback(result: TaskResult) -> None:
+            self.progress_panel.set_cancel_enabled(False)
+            self.progress_panel.hide_cancel()
+            if self._active_tasks.get(key) is runner:
+                self._active_tasks.pop(key, None)
+            if runner in self._task_runners:
+                self._task_runners.remove(runner)
+            if callable(on_finished):
+                on_finished(result)
+            runner.destroy()
+
+        runner.start(
+            worker,
+            name=name,
+            disable_while_running=disable_while_running,
+            on_started=started_callback,
+            on_progress=progress_callback,
+            on_success=success_callback,
+            on_error=error_callback,
+            on_cancelled=cancelled_callback,
+            on_finished=finished_callback,
+        )
+        return runner
 
     def create_metric_strip(
         self,

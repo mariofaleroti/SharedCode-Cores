@@ -42,3 +42,5 @@ conserva su lógica, configuración y contratos propios.
 - `CARDS_AND_STATE_COMPONENTS.md`
 
 - `METRICS_AND_TOOLTIPS.md`
+
+- `BACKGROUND_TASKS.md`

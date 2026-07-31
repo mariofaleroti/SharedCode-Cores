@@ -40,6 +40,7 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - Se agregó un helper puro para probar las opciones de encabezado.
 - Se agregaron pruebas unitarias y smoke tests con widgets `ttk` reales.
 - La fuente del repositorio inicia la línea de desarrollo `1.1.0.dev0`.
+- Los metadatos heredables de iconos ahora usan separadores `/` estables en Windows y Linux.
 
 ### Documentación
 

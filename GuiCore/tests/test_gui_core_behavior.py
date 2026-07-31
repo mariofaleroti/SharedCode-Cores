@@ -404,6 +404,21 @@ class GuiCoreTests(unittest.TestCase):
         set_window_icon_metadata(parent, "assets/app.ico", "assets/app.png")
         self.assertEqual(get_window_icon_metadata(parent), ("assets/app.ico", "assets/app.png"))
 
+    def test_window_icon_metadata_normalizes_windows_separators(self):
+        class FakeWindow:
+            pass
+
+        parent = FakeWindow()
+        set_window_icon_metadata(
+            parent,
+            r"assets\app.ico",
+            r"assets\app.png",
+        )
+        self.assertEqual(
+            get_window_icon_metadata(parent),
+            ("assets/app.ico", "assets/app.png"),
+        )
+
 
 
 class GuiCorePreferenceStoreTests(unittest.TestCase):

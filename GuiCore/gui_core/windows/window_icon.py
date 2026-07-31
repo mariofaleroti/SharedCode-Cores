@@ -51,6 +51,14 @@ def coerce_icon_path(path: str | Path | None) -> Path | None:
     return Path(text)
 
 
+def _serialize_icon_metadata_path(path: Path | None) -> str | None:
+    """Return one platform-stable path string for inherited icon metadata."""
+
+    if path is None:
+        return None
+    return str(path).replace("\\", "/")
+
+
 def set_window_icon_metadata(
     window: Any,
     icon_path: str | Path | None = None,
@@ -61,8 +69,16 @@ def set_window_icon_metadata(
     primary = coerce_icon_path(icon_path)
     fallback = coerce_icon_path(fallback_icon_path)
     try:
-        setattr(window, WINDOW_ICON_PATH_ATTR, str(primary) if primary is not None else None)
-        setattr(window, WINDOW_ICON_FALLBACK_PATH_ATTR, str(fallback) if fallback is not None else None)
+        setattr(
+            window,
+            WINDOW_ICON_PATH_ATTR,
+            _serialize_icon_metadata_path(primary),
+        )
+        setattr(
+            window,
+            WINDOW_ICON_FALLBACK_PATH_ATTR,
+            _serialize_icon_metadata_path(fallback),
+        )
     except Exception:
         pass
 

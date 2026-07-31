@@ -63,6 +63,7 @@ from gui_core import (
     normalize_window_size,
 )
 from gui_core.widgets.progress_panel import calculate_progress_value
+from gui_core.widgets.results_table import build_heading_options
 
 
 class GuiCoreTests(unittest.TestCase):
@@ -194,6 +195,43 @@ class GuiCoreTests(unittest.TestCase):
         self.assertEqual(data["key"], "name")
         self.assertFalse(data["stretch"])
 
+
+
+    def test_heading_options_omit_command_when_sorting_is_disabled(self):
+        column = TableColumn("status", "Estado")
+        options = build_heading_options(
+            column,
+            enable_sorting=False,
+            sort_callback=lambda _key: None,
+        )
+
+        self.assertEqual(options, {"text": "Estado"})
+        self.assertNotIn("command", options)
+
+    def test_heading_options_omit_command_for_non_sortable_column(self):
+        column = TableColumn("status", "Estado", sortable=False)
+        options = build_heading_options(
+            column,
+            enable_sorting=True,
+            sort_callback=lambda _key: None,
+        )
+
+        self.assertEqual(options, {"text": "Estado"})
+        self.assertNotIn("command", options)
+
+    def test_heading_options_execute_sort_callback_for_sortable_column(self):
+        selected = []
+        column = TableColumn("status", "Estado")
+        options = build_heading_options(
+            column,
+            enable_sorting=True,
+            sort_callback=selected.append,
+        )
+
+        self.assertEqual(options["text"], "Estado")
+        self.assertTrue(callable(options["command"]))
+        options["command"]()
+        self.assertEqual(selected, ["status"])
 
     def test_table_selection_mode_normalization(self):
         self.assertEqual(normalize_selection_mode("browse"), "browse")
@@ -404,8 +442,8 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
 
         self.assertEqual(loaded, GuiPreferences())
 
-    def test_public_version_is_stable(self):
-        self.assertEqual(__version__, "1.0.0")
+    def test_public_version_matches_current_development_line(self):
+        self.assertEqual(__version__, "1.1.0.dev0")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):

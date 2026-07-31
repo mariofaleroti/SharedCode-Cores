@@ -128,6 +128,30 @@ def get_sortable_value(value: Any) -> tuple[int, Any]:
         return (1, text.casefold())
 
 
+def build_heading_options(
+    column: TableColumn,
+    *,
+    enable_sorting: bool,
+    sort_callback: Callable[[str], None],
+) -> Dict[str, Any]:
+    """Build safe ttk heading options for one table column.
+
+    Tkinter treats ``command`` as an option that requires a Tcl command value.
+    Passing ``command=None`` does not mean "no command"; it creates an invalid
+    Tcl invocation. The option is therefore omitted completely whenever sorting
+    is disabled or the column is not sortable.
+    """
+
+    options: Dict[str, Any] = {"text": column.title}
+
+    if enable_sorting and column.sortable:
+        options["command"] = (
+            lambda key=column.key: sort_callback(key)
+        )
+
+    return options
+
+
 class TreeviewCellTooltip:
     """Small tooltip for table cells whose text does not fit in the column."""
 
@@ -369,10 +393,12 @@ class ResultsTable:
     def _apply_columns(self) -> None:
         self.tree.configure(columns=[column.key for column in self.columns])
         for column in self.columns:
-            command = None
-            if self.enable_sorting and column.sortable:
-                command = lambda key=column.key: self.sort_by_column(key)
-            self.tree.heading(column.key, text=column.title, command=command)
+            heading_options = build_heading_options(
+                column,
+                enable_sorting=self.enable_sorting,
+                sort_callback=self.sort_by_column,
+            )
+            self.tree.heading(column.key, **heading_options)
             self.tree.column(
                 column.key,
                 width=column.width,

@@ -1,22 +1,32 @@
 # Documentación GuiCore
 
-GuiCore es la base visual compartida para herramientas GUI del ecosistema ShareCode.
+GuiCore es la base visual compartida para herramientas GUI del ecosistema
+SharedCode.
 
-Documentos principales:
+## Documentos estables 1.0
 
 ```text
 docs/
-├─ QUICKSTART.md          # crear una app nueva usando GuiCore
-├─ GUI_CONTRACT.md        # responsabilidades, límites y doctrina visual
-├─ COMPONENT_MAP.md       # mapa de componentes y cuándo usarlos
-└─ APP_TEMPLATE.md        # plantilla mínima para una herramienta real
+├─ QUICKSTART.md
+├─ GUI_CONTRACT.md
+├─ COMPONENT_MAP.md
+└─ APP_TEMPLATE.md
 ```
 
-Lectura recomendada:
+## Evolución 1.1
 
-1. `GUI_CONTRACT.md`
-2. `QUICKSTART.md`
-3. `COMPONENT_MAP.md`
-4. `APP_TEMPLATE.md`
+```text
+docs/
+├─ GUI_CORE_1_1_CONTRACT.md
+├─ SMARTFILTER_EXTRACTION_MAP.md
+└─ GUI_CORE_1_1_IMPLEMENTATION_PLAN.md
+```
 
-Regla principal: GuiCore resuelve la experiencia visual común; cada herramienta conserva su lógica propia.
+Lectura recomendada para desarrollar GuiCore 1.1.0:
+
+1. `GUI_CORE_1_1_CONTRACT.md`
+2. `SMARTFILTER_EXTRACTION_MAP.md`
+3. `GUI_CORE_1_1_IMPLEMENTATION_PLAN.md`
+
+Regla principal: GuiCore resuelve la experiencia visual común; cada herramienta
+conserva su lógica, configuración y contratos propios.

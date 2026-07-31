@@ -1,7 +1,51 @@
 # Changelog
 
-Todas las notas relevantes de GuiCore quedan registradas aquí. El objetivo es que cada herramienta del ecosistema pueda saber qué contrato visual está consumiendo.
+Todas las notas relevantes de GuiCore quedan registradas aquí. El objetivo es
+que cada herramienta del ecosistema pueda saber qué contrato visual está
+consumiendo.
 
+## Unreleased — objetivo v1.1.0
+
+Estado: **implementación iniciada en la línea 1.1.0.dev0**.
+
+### Decisiones
+
+- SharedCode 1.0.0 permanece congelado y disponible.
+- GuiCore 1.1.0 será aditivo y retrocompatible.
+- SmartFilter se utilizará como fuente de patrones visuales maduros, no de lógica
+  de negocio.
+- ShadowBackup será el primer consumidor de validación.
+- La migración de proyectos será individual y con dependencias fijadas.
+
+### Alcance planificado
+
+- corrección completa de `ResultsTable`;
+- perfiles de layout;
+- sidebar/footer compactos y configurables;
+- acciones primarias fijas;
+- controles compactos;
+- tarjetas plegables;
+- tabla de estado;
+- estados vacíos;
+- tooltips;
+- métricas visuales;
+- ciclo visual genérico de operaciones largas.
+
+### Implementado
+
+- `ResultsTable` ya no pasa `command=None` a `ttk.Treeview.heading`.
+- El parámetro `enable_sorting=False` vuelve a ser seguro.
+- Las columnas individuales con `sortable=False` omiten completamente el
+  callback de encabezado.
+- Se agregó un helper puro para probar las opciones de encabezado.
+- Se agregaron pruebas unitarias y smoke tests con widgets `ttk` reales.
+- La fuente del repositorio inicia la línea de desarrollo `1.1.0.dev0`.
+
+### Documentación
+
+- `docs/GUI_CORE_1_1_CONTRACT.md`
+- `docs/SMARTFILTER_EXTRACTION_MAP.md`
+- `docs/GUI_CORE_1_1_IMPLEMENTATION_PLAN.md`
 
 ## v0.1.2 - Progreso indeterminado reutilizable
 

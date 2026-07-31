@@ -39,6 +39,7 @@ class GuiActionButton:
     command_key: str | None = None
     style: str = "primary"
     enabled: bool = True
+    icon_text: str = ""
 
     @property
     def key(self) -> str:
@@ -50,6 +51,53 @@ class GuiActionButton:
             "command_key": self.key,
             "style": self.style,
             "enabled": self.enabled,
+            "icon_text": self.icon_text,
+        }
+
+
+@dataclass(frozen=True)
+class SidebarConfig:
+    """Declarative structure for the reusable application sidebar."""
+
+    header_visible: bool = True
+    scrollable: bool = True
+    footer_label_visible: bool = True
+    footer_label: str = "MENÚ"
+    footer_columns: int = 1
+    footer_button_style: str = "secondary"
+    primary_actions_visible: bool = True
+    primary_actions_label_visible: bool = False
+    primary_actions_label: str = "ACCIONES"
+    primary_action_columns: int = 1
+    scrollbar_width: int | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in ("footer_columns", "primary_action_columns"):
+            value = int(getattr(self, field_name))
+            if value < 1 or value > 4:
+                raise ValueError(f"{field_name} must be between 1 and 4.")
+        if self.scrollbar_width is not None and int(self.scrollbar_width) <= 0:
+            raise ValueError("scrollbar_width must be greater than zero.")
+        if not str(self.footer_label).strip():
+            raise ValueError("footer_label cannot be empty.")
+        if not str(self.primary_actions_label).strip():
+            raise ValueError("primary_actions_label cannot be empty.")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "header_visible": bool(self.header_visible),
+            "scrollable": bool(self.scrollable),
+            "footer_label_visible": bool(self.footer_label_visible),
+            "footer_label": self.footer_label,
+            "footer_columns": int(self.footer_columns),
+            "footer_button_style": self.footer_button_style,
+            "primary_actions_visible": bool(self.primary_actions_visible),
+            "primary_actions_label_visible": bool(
+                self.primary_actions_label_visible
+            ),
+            "primary_actions_label": self.primary_actions_label,
+            "primary_action_columns": int(self.primary_action_columns),
+            "scrollbar_width": self.scrollbar_width,
         }
 
 
@@ -70,6 +118,8 @@ class GuiAppConfig:
     min_height: int = 640
     sidebar_width: int = 270
     layout_profile: str | GuiLayoutProfile = "standard"
+    sidebar_config: SidebarConfig = field(default_factory=SidebarConfig)
+    primary_actions: Tuple[GuiActionButton, ...] = field(default_factory=tuple)
     maximize_on_start: bool = True
     restart_on_appearance_change: bool = True
     restart_delay_ms: int = 350
@@ -118,6 +168,8 @@ class GuiAppConfig:
             "min_height": self.min_height,
             "sidebar_width": self.sidebar_width,
             "layout_profile": self.resolved_layout_profile.to_dict(),
+            "sidebar_config": self.sidebar_config.to_dict(),
+            "primary_actions": [item.to_dict() for item in self.primary_actions],
             "maximize_on_start": self.maximize_on_start,
             "restart_on_appearance_change": self.restart_on_appearance_change,
             "restart_delay_ms": self.restart_delay_ms,

@@ -11,7 +11,7 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 ### Decisiones
 
 - SharedCode 1.0.0 permanece congelado y disponible.
-- GuiCore 1.1.0 será aditivo y retrocompatible.
+- GuiCore 1.1.0 tendrá un contrato propio; los proyectos anteriores permanecen fijados a 1.0.0.
 - SmartFilter se utilizará como fuente de patrones visuales maduros, no de lógica
   de negocio.
 - ShadowBackup será el primer consumidor de validación.
@@ -46,6 +46,18 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - GuiAppWindow propaga densidad, alturas y espaciados a sidebar, controles y tarjetas.
 - Se documentaron perfiles personalizados inmutables y serializables.
 - La línea de desarrollo avanza a `1.1.0.dev1`.
+- Se agregó `SidebarConfig` para declarar header, scroll, footer y acciones fijas.
+- El footer admite de una a cuatro columnas y etiqueta opcional.
+- Las acciones primarias permanecen fuera del formulario desplazable.
+- El scrollbar puede configurarse sin acceder a `_scrollbar` desde el proyecto consumidor.
+- Se agregaron APIs públicas para habilitar acciones y obtener sus botones.
+- La línea de desarrollo avanza a `1.1.0.dev2`.
+- Los controles de formulario aceptan dimensiones, roles de fuente y etiquetas opcionales.
+- `PathPicker` permite declarar ancho total, ancho del botón auxiliar y separación.
+- Se agregó `LabeledComboAction` como componente público.
+- Switches, checkboxes y botones aceptan geometría y tipografía configurables.
+- `SidebarFormSection` puede crear combos con acción sin frames manuales.
+- La línea de desarrollo avanza a `1.1.0.dev3`.
 
 ### Documentación
 

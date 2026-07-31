@@ -5,6 +5,7 @@ from .form_controls import (
     ButtonSpec,
     ChoiceOption,
     LabeledCheckBox,
+    LabeledComboAction,
     LabeledComboBox,
     LabeledEntry,
     LabeledSwitch,
@@ -16,6 +17,8 @@ from .form_controls import (
     normalize_button_style,
     normalize_command_key,
     normalize_control_state,
+    resolve_control_dimension,
+    resolve_control_gap,
     normalize_picker_mode,
 )
 from .progress_panel import ProgressPanel
@@ -39,6 +42,7 @@ __all__ = [
     "ChoiceOption",
     "ContentPanel",
     "LabeledCheckBox",
+    "LabeledComboAction",
     "LabeledComboBox",
     "LabeledEntry",
     "LabeledSwitch",
@@ -59,6 +63,8 @@ __all__ = [
     "normalize_button_style",
     "normalize_command_key",
     "normalize_control_state",
+    "resolve_control_dimension",
+    "resolve_control_gap",
     "normalize_picker_mode",
     "normalize_selection_mode",
     "row_values_to_mapping",

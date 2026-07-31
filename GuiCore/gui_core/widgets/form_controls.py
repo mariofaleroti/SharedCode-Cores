@@ -72,6 +72,34 @@ def normalize_picker_mode(mode: str | None) -> str:
     return value
 
 
+def resolve_control_dimension(
+    value: int | None,
+    fallback: int,
+    *,
+    field_name: str = "dimension",
+) -> int:
+    """Resolve one optional positive control dimension."""
+
+    resolved = int(fallback if value is None else value)
+    if resolved <= 0:
+        raise ValueError(f"{field_name} must be greater than zero.")
+    return resolved
+
+
+def resolve_control_gap(
+    value: int | None,
+    fallback: int,
+    *,
+    field_name: str = "gap",
+) -> int:
+    """Resolve one optional non-negative control spacing value."""
+
+    resolved = int(fallback if value is None else value)
+    if resolved < 0:
+        raise ValueError(f"{field_name} cannot be negative.")
+    return resolved
+
+
 def normalize_control_state(enabled: bool = True) -> str:
     return "normal" if bool(enabled) else "disabled"
 
@@ -307,6 +335,23 @@ class SidebarFormSection:
         kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(PathPicker(self.frame, label, font_config=self.font_config, **kwargs))
 
+    def add_labeled_combo_action(
+        self,
+        label: str,
+        values: Iterable[str | ChoiceOption | Mapping[str, Any]],
+        **kwargs: Any,
+    ) -> "LabeledComboAction":
+        kwargs.setdefault("layout_profile", self.layout_profile)
+        return self.add_widget(
+            LabeledComboAction(
+                self.frame,
+                label,
+                values,
+                font_config=self.font_config,
+                **kwargs,
+            )
+        )
+
     def add_checkbox(self, text: str, **kwargs: Any) -> "LabeledCheckBox":
         kwargs.setdefault("layout_profile", self.layout_profile)
         return self.add_widget(LabeledCheckBox(self.frame, text, font_config=self.font_config, **kwargs))
@@ -348,7 +393,7 @@ class SidebarFormSection:
 
 
 class LabeledEntry:
-    """Label + entry control for sidebar forms."""
+    """Label + entry control with reusable density overrides."""
 
     def __init__(
         self,
@@ -360,6 +405,15 @@ class LabeledEntry:
         enabled: bool = True,
         show: str | None = None,
         layout_profile: str | GuiLayoutProfile | None = None,
+        *,
+        label_visible: bool = True,
+        height: int | None = None,
+        width: int | None = None,
+        font_role: str = "body",
+        label_font_role: str = "small",
+        label_weight: str | None = "bold",
+        label_gap: int | None = None,
+        on_change: Callable[[str], None] | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
@@ -367,35 +421,71 @@ class LabeledEntry:
         self.font_config = font_config or FontConfig().with_size_offset(
             self.layout_profile.font_size_offset
         )
+        self.font_role = str(font_role or "body")
+        self.label_font_role = str(label_font_role or "small")
+        self.label_weight = label_weight
+        self.on_change = on_change
+
+        control_height = resolve_control_dimension(
+            height,
+            self.layout_profile.control_height,
+            field_name="height",
+        )
+        control_width = (
+            None
+            if width is None
+            else resolve_control_dimension(width, width, field_name="width")
+        )
+        resolved_label_gap = resolve_control_gap(
+            label_gap,
+            self.layout_profile.label_gap,
+            field_name="label_gap",
+        )
+
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
 
-        self.label = ctk.CTkLabel(
-            self.frame,
-            text=label,
-            font=self.font_config.tuple("small", "bold"),
-            text_color=("gray30", "gray72"),
-            anchor="w",
-        )
-        self.label.grid(
-            row=0,
-            column=0,
-            padx=2,
-            pady=(0, self.layout_profile.label_gap),
-            sticky="ew",
-        )
+        self.label = None
+        entry_row = 0
+        if label_visible and str(label).strip():
+            self.label = ctk.CTkLabel(
+                self.frame,
+                text=label,
+                font=self.font_config.tuple(
+                    self.label_font_role,
+                    self.label_weight,
+                ),
+                text_color=("gray30", "gray72"),
+                anchor="w",
+            )
+            self.label.grid(
+                row=0,
+                column=0,
+                padx=2,
+                pady=(0, resolved_label_gap),
+                sticky="ew",
+            )
+            entry_row = 1
 
         entry_kwargs: dict[str, Any] = {
             "placeholder_text": placeholder,
-            "font": self.font_config.tuple("body"),
+            "font": self.font_config.tuple(self.font_role),
             "state": normalize_control_state(enabled),
-            "height": self.layout_profile.control_height,
+            "height": control_height,
         }
+        if control_width is not None:
+            entry_kwargs["width"] = control_width
         if show:
             entry_kwargs["show"] = show
 
         self.entry = ctk.CTkEntry(self.frame, **entry_kwargs)
-        self.entry.grid(row=1, column=0, sticky="ew")
+        self.entry.grid(row=entry_row, column=0, sticky="ew")
+        if callable(self.on_change):
+            self.entry.bind(
+                "<KeyRelease>",
+                lambda _event: self.on_change(self.get_value()),
+                add="+",
+            )
         if value:
             self.set_value(value)
 
@@ -420,22 +510,42 @@ class LabeledEntry:
     def set_enabled(self, enabled: bool) -> None:
         self.entry.configure(state=normalize_control_state(enabled))
 
-    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
         if font_config is not None:
             self.font_config = font_config
-            self.label.configure(font=self.font_config.tuple("small", "bold"))
-            self.entry.configure(font=self.font_config.tuple("body"))
+            if self.label is not None:
+                self.label.configure(
+                    font=self.font_config.tuple(
+                        self.label_font_role,
+                        self.label_weight,
+                    )
+                )
+            self.entry.configure(
+                font=self.font_config.tuple(self.font_role)
+            )
         colors = get_control_colors(appearance_mode, surface_theme)
         try:
             self.frame.configure(fg_color="transparent")
-            self.label.configure(text_color=colors["label_text_color"])
-            apply_standard_control_colors(self.entry, appearance_mode, surface_theme)
+            if self.label is not None:
+                self.label.configure(
+                    text_color=colors["label_text_color"]
+                )
+            apply_standard_control_colors(
+                self.entry,
+                appearance_mode,
+                surface_theme,
+            )
         except Exception:
             pass
 
-
 class LabeledComboBox:
-    """Label + combo control with stable display labels."""
+    """Label + combo control with stable values and density overrides."""
 
     def __init__(
         self,
@@ -447,6 +557,14 @@ class LabeledComboBox:
         enabled: bool = True,
         command: Callable[[str], None] | None = None,
         layout_profile: str | GuiLayoutProfile | None = None,
+        *,
+        label_visible: bool = True,
+        height: int | None = None,
+        width: int | None = None,
+        font_role: str = "body",
+        label_font_role: str = "small",
+        label_weight: str | None = "bold",
+        label_gap: int | None = None,
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
@@ -454,38 +572,70 @@ class LabeledComboBox:
         self.font_config = font_config or FontConfig().with_size_offset(
             self.layout_profile.font_size_offset
         )
+        self.font_role = str(font_role or "body")
+        self.label_font_role = str(label_font_role or "small")
+        self.label_weight = label_weight
         self.options = coerce_choice_options(values)
         labels = [option.label for option in self.options]
-        self._value_by_label = {option.label: option.resolved_value for option in self.options}
+        self._value_by_label = {
+            option.label: option.resolved_value
+            for option in self.options
+        }
+
+        control_height = resolve_control_dimension(
+            height,
+            self.layout_profile.control_height,
+            field_name="height",
+        )
+        control_width = (
+            None
+            if width is None
+            else resolve_control_dimension(width, width, field_name="width")
+        )
+        resolved_label_gap = resolve_control_gap(
+            label_gap,
+            self.layout_profile.label_gap,
+            field_name="label_gap",
+        )
 
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
 
-        self.label = ctk.CTkLabel(
-            self.frame,
-            text=label,
-            font=self.font_config.tuple("small", "bold"),
-            text_color=("gray30", "gray72"),
-            anchor="w",
-        )
-        self.label.grid(
-            row=0,
-            column=0,
-            padx=2,
-            pady=(0, self.layout_profile.label_gap),
-            sticky="ew",
-        )
+        self.label = None
+        combo_row = 0
+        if label_visible and str(label).strip():
+            self.label = ctk.CTkLabel(
+                self.frame,
+                text=label,
+                font=self.font_config.tuple(
+                    self.label_font_role,
+                    self.label_weight,
+                ),
+                text_color=("gray30", "gray72"),
+                anchor="w",
+            )
+            self.label.grid(
+                row=0,
+                column=0,
+                padx=2,
+                pady=(0, resolved_label_gap),
+                sticky="ew",
+            )
+            combo_row = 1
 
-        self.combo = ctk.CTkComboBox(
-            self.frame,
-            values=labels,
-            font=self.font_config.tuple("body"),
-            dropdown_font=self.font_config.tuple("body"),
-            state=normalize_control_state(enabled),
-            command=command,
-            height=self.layout_profile.control_height,
-        )
-        self.combo.grid(row=1, column=0, sticky="ew")
+        combo_kwargs: dict[str, Any] = {
+            "values": labels,
+            "font": self.font_config.tuple(self.font_role),
+            "dropdown_font": self.font_config.tuple(self.font_role),
+            "state": normalize_control_state(enabled),
+            "command": command,
+            "height": control_height,
+        }
+        if control_width is not None:
+            combo_kwargs["width"] = control_width
+
+        self.combo = ctk.CTkComboBox(self.frame, **combo_kwargs)
+        self.combo.grid(row=combo_row, column=0, sticky="ew")
 
         if default_value and default_value in labels:
             self.combo.set(default_value)
@@ -505,13 +655,23 @@ class LabeledComboBox:
     def set_value(self, value: str) -> None:
         self.combo.set(str(value))
 
-    def set_values(self, values: Iterable[str | ChoiceOption | Mapping[str, Any]], default_value: str | None = None) -> None:
+    def set_values(
+        self,
+        values: Iterable[str | ChoiceOption | Mapping[str, Any]],
+        default_value: str | None = None,
+    ) -> None:
         self.options = coerce_choice_options(values)
         labels = [option.label for option in self.options]
-        self._value_by_label = {option.label: option.resolved_value for option in self.options}
+        self._value_by_label = {
+            option.label: option.resolved_value
+            for option in self.options
+        }
+        current = self.combo.get()
         self.combo.configure(values=labels)
         if default_value and default_value in labels:
             self.combo.set(default_value)
+        elif current in labels:
+            self.combo.set(current)
         elif labels:
             self.combo.set(labels[0])
         else:
@@ -520,25 +680,44 @@ class LabeledComboBox:
     def set_enabled(self, enabled: bool) -> None:
         self.combo.configure(state=normalize_control_state(enabled))
 
-    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
         if font_config is not None:
             self.font_config = font_config
-            self.label.configure(font=self.font_config.tuple("small", "bold"))
-            self.combo.configure(font=self.font_config.tuple("body"), dropdown_font=self.font_config.tuple("body"))
+            if self.label is not None:
+                self.label.configure(
+                    font=self.font_config.tuple(
+                        self.label_font_role,
+                        self.label_weight,
+                    )
+                )
+            self.combo.configure(
+                font=self.font_config.tuple(self.font_role),
+                dropdown_font=self.font_config.tuple(self.font_role),
+            )
         colors = get_control_colors(appearance_mode, surface_theme)
         try:
             self.frame.configure(fg_color="transparent")
-            self.label.configure(text_color=colors["label_text_color"])
-            apply_standard_control_colors(self.combo, appearance_mode, surface_theme, include_dropdown=True)
+            if self.label is not None:
+                self.label.configure(
+                    text_color=colors["label_text_color"]
+                )
+            apply_standard_control_colors(
+                self.combo,
+                appearance_mode,
+                surface_theme,
+                include_dropdown=True,
+            )
         except Exception:
             pass
 
-
 class PathPicker:
-    """Entry + browse button for folder/file paths.
-
-    It only selects a path and returns it. The tool decides how that path is used.
-    """
+    """Entry + browse button with reusable compact geometry."""
 
     def __init__(
         self,
@@ -554,6 +733,18 @@ class PathPicker:
         title: str | None = None,
         on_change: Callable[[str], None] | None = None,
         layout_profile: str | GuiLayoutProfile | None = None,
+        *,
+        label_visible: bool = True,
+        height: int | None = None,
+        width: int | None = None,
+        button_width: int | None = None,
+        gap: int | None = None,
+        font_role: str = "body",
+        button_font_role: str | None = None,
+        label_font_role: str = "small",
+        label_weight: str | None = "bold",
+        label_gap: int | None = None,
+        button_style: str = "primary",
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
@@ -561,52 +752,112 @@ class PathPicker:
         self.font_config = font_config or FontConfig().with_size_offset(
             self.layout_profile.font_size_offset
         )
+        self.font_role = str(font_role or "body")
+        self.button_font_role = str(button_font_role or self.font_role)
+        self.label_font_role = str(label_font_role or "small")
+        self.label_weight = label_weight
+        self.button_style = normalize_button_style(button_style)
         self.mode = normalize_picker_mode(mode)
-        self.filetypes = tuple(filetypes or (("Todos los archivos", "*.*"),))
-        self.dialog_title = title or ("Seleccionar carpeta" if self.mode == "folder" else "Seleccionar archivo")
+        self.filetypes = tuple(
+            filetypes or (("Todos los archivos", "*.*"),)
+        )
+        self.dialog_title = title or (
+            "Seleccionar carpeta"
+            if self.mode == "folder"
+            else "Seleccionar archivo"
+        )
         self.on_change = on_change
+
+        control_height = resolve_control_dimension(
+            height,
+            self.layout_profile.control_height,
+            field_name="height",
+        )
+        auxiliary_width = resolve_control_dimension(
+            button_width,
+            self.layout_profile.picker_button_width,
+            field_name="button_width",
+        )
+        auxiliary_gap = resolve_control_gap(
+            gap,
+            self.layout_profile.inline_gap,
+            field_name="gap",
+        )
+        resolved_label_gap = resolve_control_gap(
+            label_gap,
+            self.layout_profile.label_gap,
+            field_name="label_gap",
+        )
+
+        entry_width = None
+        if width is not None:
+            total_width = resolve_control_dimension(
+                width,
+                width,
+                field_name="width",
+            )
+            entry_width = total_width - auxiliary_width - auxiliary_gap
+            if entry_width <= 0:
+                raise ValueError(
+                    "width must be greater than button_width + gap."
+                )
 
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
 
-        self.label = ctk.CTkLabel(
-            self.frame,
-            text=label,
-            font=self.font_config.tuple("small", "bold"),
-            text_color=("gray30", "gray72"),
-            anchor="w",
-        )
-        self.label.grid(
-            row=0,
+        self.label = None
+        control_row = 0
+        if label_visible and str(label).strip():
+            self.label = ctk.CTkLabel(
+                self.frame,
+                text=label,
+                font=self.font_config.tuple(
+                    self.label_font_role,
+                    self.label_weight,
+                ),
+                text_color=("gray30", "gray72"),
+                anchor="w",
+            )
+            self.label.grid(
+                row=0,
+                column=0,
+                columnspan=2,
+                padx=2,
+                pady=(0, resolved_label_gap),
+                sticky="ew",
+            )
+            control_row = 1
+
+        entry_kwargs: dict[str, Any] = {
+            "placeholder_text": placeholder,
+            "font": self.font_config.tuple(self.font_role),
+            "state": normalize_control_state(enabled),
+            "height": control_height,
+        }
+        if entry_width is not None:
+            entry_kwargs["width"] = entry_width
+
+        self.entry = ctk.CTkEntry(self.frame, **entry_kwargs)
+        self.entry.grid(
+            row=control_row,
             column=0,
-            columnspan=2,
-            padx=2,
-            pady=(0, self.layout_profile.label_gap),
             sticky="ew",
         )
-
-        self.entry = ctk.CTkEntry(
-            self.frame,
-            placeholder_text=placeholder,
-            font=self.font_config.tuple("body"),
-            state=normalize_control_state(enabled),
-            height=self.layout_profile.control_height,
-        )
-        self.entry.grid(row=1, column=0, sticky="ew")
 
         self.button = ctk.CTkButton(
             self.frame,
             text=button_text,
-            width=self.layout_profile.picker_button_width,
-            height=self.layout_profile.control_height,
+            width=auxiliary_width,
+            height=control_height,
             command=self.open_dialog,
             state=normalize_control_state(enabled),
-            font=self.font_config.tuple("body"),
+            font=self.font_config.tuple(self.button_font_role),
+            **get_button_style_options(self.button_style),
         )
         self.button.grid(
-            row=1,
+            row=control_row,
             column=1,
-            padx=(self.layout_profile.inline_gap, 0),
+            padx=(auxiliary_gap, 0),
             sticky="e",
         )
 
@@ -638,19 +889,48 @@ class PathPicker:
         self.entry.configure(state=state)
         self.button.configure(state=state)
 
-    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
         if font_config is not None:
             self.font_config = font_config
-            self.label.configure(font=self.font_config.tuple("small", "bold"))
-            self.entry.configure(font=self.font_config.tuple("body"))
-            self.button.configure(font=self.font_config.tuple("body"))
+            if self.label is not None:
+                self.label.configure(
+                    font=self.font_config.tuple(
+                        self.label_font_role,
+                        self.label_weight,
+                    )
+                )
+            self.entry.configure(
+                font=self.font_config.tuple(self.font_role)
+            )
+            self.button.configure(
+                font=self.font_config.tuple(self.button_font_role)
+            )
         colors = get_control_colors(appearance_mode, surface_theme)
-        accent = get_accent_colors(color_theme)
         try:
             self.frame.configure(fg_color="transparent")
-            self.label.configure(text_color=colors["label_text_color"])
-            apply_standard_control_colors(self.entry, appearance_mode, surface_theme)
-            self.button.configure(fg_color=accent["primary"], hover_color=accent["hover"], text_color="#ffffff")
+            if self.label is not None:
+                self.label.configure(
+                    text_color=colors["label_text_color"]
+                )
+            apply_standard_control_colors(
+                self.entry,
+                appearance_mode,
+                surface_theme,
+            )
+            self.button.configure(
+                **get_button_style_options(
+                    self.button_style,
+                    color_theme,
+                    surface_theme,
+                    appearance_mode,
+                )
+            )
         except Exception:
             pass
 
@@ -659,11 +939,19 @@ class PathPicker:
             from tkinter import filedialog
 
             if self.mode == "file":
-                selected = filedialog.askopenfilename(title=self.dialog_title, filetypes=self.filetypes)
+                selected = filedialog.askopenfilename(
+                    title=self.dialog_title,
+                    filetypes=self.filetypes,
+                )
             elif self.mode == "save_file":
-                selected = filedialog.asksaveasfilename(title=self.dialog_title, filetypes=self.filetypes)
+                selected = filedialog.asksaveasfilename(
+                    title=self.dialog_title,
+                    filetypes=self.filetypes,
+                )
             else:
-                selected = filedialog.askdirectory(title=self.dialog_title)
+                selected = filedialog.askdirectory(
+                    title=self.dialog_title
+                )
         except Exception:
             selected = ""
 
@@ -672,9 +960,252 @@ class PathPicker:
             return str(selected)
         return None
 
+class LabeledComboAction:
+    """Combo box with one auxiliary action button."""
+
+    def __init__(
+        self,
+        parent: Any,
+        label: str,
+        values: Iterable[str | ChoiceOption | Mapping[str, Any]],
+        default_value: str | None = None,
+        combo_command: Callable[[str], None] | None = None,
+        button_text: str = "...",
+        button_command: Callable[[], None] | None = None,
+        font_config: FontConfig | None = None,
+        enabled: bool = True,
+        button_enabled: bool | None = None,
+        layout_profile: str | GuiLayoutProfile | None = None,
+        *,
+        label_visible: bool = True,
+        height: int | None = None,
+        width: int | None = None,
+        button_width: int | None = None,
+        gap: int | None = None,
+        font_role: str = "body",
+        button_font_role: str | None = None,
+        label_font_role: str = "small",
+        label_weight: str | None = "bold",
+        label_gap: int | None = None,
+        button_style: str = "secondary",
+    ) -> None:
+        ctk = require_customtkinter()
+        self.ctk = ctk
+        self.layout_profile = get_layout_profile(layout_profile)
+        self.font_config = font_config or FontConfig().with_size_offset(
+            self.layout_profile.font_size_offset
+        )
+        self.font_role = str(font_role or "body")
+        self.button_font_role = str(button_font_role or self.font_role)
+        self.label_font_role = str(label_font_role or "small")
+        self.label_weight = label_weight
+        self.button_style = normalize_button_style(button_style)
+        self.options = coerce_choice_options(values)
+        labels = [option.label for option in self.options]
+        self._value_by_label = {
+            option.label: option.resolved_value
+            for option in self.options
+        }
+
+        control_height = resolve_control_dimension(
+            height,
+            self.layout_profile.control_height,
+            field_name="height",
+        )
+        auxiliary_width = resolve_control_dimension(
+            button_width,
+            self.layout_profile.picker_button_width,
+            field_name="button_width",
+        )
+        auxiliary_gap = resolve_control_gap(
+            gap,
+            self.layout_profile.inline_gap,
+            field_name="gap",
+        )
+        resolved_label_gap = resolve_control_gap(
+            label_gap,
+            self.layout_profile.label_gap,
+            field_name="label_gap",
+        )
+
+        combo_width = None
+        if width is not None:
+            total_width = resolve_control_dimension(
+                width,
+                width,
+                field_name="width",
+            )
+            combo_width = total_width - auxiliary_width - auxiliary_gap
+            if combo_width <= 0:
+                raise ValueError(
+                    "width must be greater than button_width + gap."
+                )
+
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.grid_columnconfigure(0, weight=1)
+
+        self.label = None
+        control_row = 0
+        if label_visible and str(label).strip():
+            self.label = ctk.CTkLabel(
+                self.frame,
+                text=label,
+                font=self.font_config.tuple(
+                    self.label_font_role,
+                    self.label_weight,
+                ),
+                text_color=("gray30", "gray72"),
+                anchor="w",
+            )
+            self.label.grid(
+                row=0,
+                column=0,
+                columnspan=2,
+                padx=2,
+                pady=(0, resolved_label_gap),
+                sticky="ew",
+            )
+            control_row = 1
+
+        combo_kwargs: dict[str, Any] = {
+            "values": labels,
+            "font": self.font_config.tuple(self.font_role),
+            "dropdown_font": self.font_config.tuple(self.font_role),
+            "state": normalize_control_state(enabled),
+            "command": combo_command,
+            "height": control_height,
+        }
+        if combo_width is not None:
+            combo_kwargs["width"] = combo_width
+
+        self.combo = ctk.CTkComboBox(self.frame, **combo_kwargs)
+        self.combo.grid(
+            row=control_row,
+            column=0,
+            sticky="ew",
+        )
+
+        resolved_button_enabled = (
+            enabled
+            if button_enabled is None
+            else bool(button_enabled)
+        )
+        self.button = ctk.CTkButton(
+            self.frame,
+            text=button_text,
+            width=auxiliary_width,
+            height=control_height,
+            command=button_command,
+            state=normalize_control_state(resolved_button_enabled),
+            font=self.font_config.tuple(self.button_font_role),
+            **get_button_style_options(self.button_style),
+        )
+        self.button.grid(
+            row=control_row,
+            column=1,
+            padx=(auxiliary_gap, 0),
+            sticky="e",
+        )
+
+        if default_value and default_value in labels:
+            self.combo.set(default_value)
+        elif labels:
+            self.combo.set(labels[0])
+
+    def grid(self, *args: Any, **kwargs: Any) -> None:
+        self.frame.grid(*args, **kwargs)
+
+    def get_label(self) -> str:
+        return self.combo.get()
+
+    def get_value(self) -> Any:
+        label = self.get_label()
+        return self._value_by_label.get(label, label)
+
+    def set_value(self, value: str) -> None:
+        self.combo.set(str(value))
+
+    def set_values(
+        self,
+        values: Iterable[str | ChoiceOption | Mapping[str, Any]],
+        default_value: str | None = None,
+    ) -> None:
+        self.options = coerce_choice_options(values)
+        labels = [option.label for option in self.options]
+        self._value_by_label = {
+            option.label: option.resolved_value
+            for option in self.options
+        }
+        current = self.combo.get()
+        self.combo.configure(values=labels)
+        if default_value and default_value in labels:
+            self.combo.set(default_value)
+        elif current in labels:
+            self.combo.set(current)
+        elif labels:
+            self.combo.set(labels[0])
+        else:
+            self.combo.set("")
+
+    def set_enabled(self, enabled: bool) -> None:
+        state = normalize_control_state(enabled)
+        self.combo.configure(state=state)
+        self.button.configure(state=state)
+
+    def set_action_enabled(self, enabled: bool) -> None:
+        self.button.configure(
+            state=normalize_control_state(enabled)
+        )
+
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
+        if font_config is not None:
+            self.font_config = font_config
+            if self.label is not None:
+                self.label.configure(
+                    font=self.font_config.tuple(
+                        self.label_font_role,
+                        self.label_weight,
+                    )
+                )
+            self.combo.configure(
+                font=self.font_config.tuple(self.font_role),
+                dropdown_font=self.font_config.tuple(self.font_role),
+            )
+            self.button.configure(
+                font=self.font_config.tuple(self.button_font_role)
+            )
+        colors = get_control_colors(appearance_mode, surface_theme)
+        try:
+            self.frame.configure(fg_color="transparent")
+            if self.label is not None:
+                self.label.configure(
+                    text_color=colors["label_text_color"]
+                )
+            apply_standard_control_colors(
+                self.combo,
+                appearance_mode,
+                surface_theme,
+                include_dropdown=True,
+            )
+            self.button.configure(
+                **get_button_style_options(
+                    self.button_style,
+                    color_theme,
+                    surface_theme,
+                    appearance_mode,
+                )
+            )
+        except Exception:
+            pass
 
 class LabeledCheckBox:
-    """Reusable checkbox row."""
+    """Reusable checkbox row with configurable size and font role."""
 
     def __init__(
         self,
@@ -685,6 +1216,10 @@ class LabeledCheckBox:
         enabled: bool = True,
         command: Callable[[], None] | None = None,
         layout_profile: str | GuiLayoutProfile | None = None,
+        *,
+        height: int | None = None,
+        width: int | None = None,
+        font_role: str = "body",
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
@@ -692,19 +1227,40 @@ class LabeledCheckBox:
         self.font_config = font_config or FontConfig().with_size_offset(
             self.layout_profile.font_size_offset
         )
+        self.font_role = str(font_role or "body")
+        control_height = resolve_control_dimension(
+            height,
+            self.layout_profile.toggle_height,
+            field_name="height",
+        )
+
         self.variable = ctk.BooleanVar(value=bool(default))
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
-        self.checkbox = ctk.CTkCheckBox(
-            self.frame,
-            text=text,
-            variable=self.variable,
-            command=command,
-            font=self.font_config.tuple("body"),
-            state=normalize_control_state(enabled),
-            height=self.layout_profile.toggle_height,
+
+        kwargs: dict[str, Any] = {
+            "text": text,
+            "variable": self.variable,
+            "command": command,
+            "font": self.font_config.tuple(self.font_role),
+            "state": normalize_control_state(enabled),
+            "height": control_height,
+        }
+        if width is not None:
+            kwargs["width"] = resolve_control_dimension(
+                width,
+                width,
+                field_name="width",
+            )
+
+        self.checkbox = ctk.CTkCheckBox(self.frame, **kwargs)
+        self.checkbox.grid(
+            row=0,
+            column=0,
+            padx=2,
+            pady=0,
+            sticky="ew",
         )
-        self.checkbox.grid(row=0, column=0, padx=2, pady=0, sticky="ew")
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         self.frame.grid(*args, **kwargs)
@@ -716,12 +1272,22 @@ class LabeledCheckBox:
         self.variable.set(bool(value))
 
     def set_enabled(self, enabled: bool) -> None:
-        self.checkbox.configure(state=normalize_control_state(enabled))
+        self.checkbox.configure(
+            state=normalize_control_state(enabled)
+        )
 
-    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
         if font_config is not None:
             self.font_config = font_config
-            self.checkbox.configure(font=self.font_config.tuple("body"))
+            self.checkbox.configure(
+                font=self.font_config.tuple(self.font_role)
+            )
         colors = get_control_colors(appearance_mode, surface_theme)
         accent = get_accent_colors(color_theme)
         try:
@@ -734,9 +1300,8 @@ class LabeledCheckBox:
         except Exception:
             pass
 
-
 class LabeledSwitch:
-    """Reusable switch row for persistent/boolean options."""
+    """Reusable switch row with configurable size and font role."""
 
     def __init__(
         self,
@@ -747,6 +1312,10 @@ class LabeledSwitch:
         enabled: bool = True,
         command: Callable[[], None] | None = None,
         layout_profile: str | GuiLayoutProfile | None = None,
+        *,
+        height: int | None = None,
+        width: int | None = None,
+        font_role: str = "body",
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
@@ -754,19 +1323,40 @@ class LabeledSwitch:
         self.font_config = font_config or FontConfig().with_size_offset(
             self.layout_profile.font_size_offset
         )
+        self.font_role = str(font_role or "body")
+        control_height = resolve_control_dimension(
+            height,
+            self.layout_profile.toggle_height,
+            field_name="height",
+        )
+
         self.variable = ctk.BooleanVar(value=bool(default))
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
-        self.switch = ctk.CTkSwitch(
-            self.frame,
-            text=text,
-            variable=self.variable,
-            command=command,
-            font=self.font_config.tuple("body"),
-            state=normalize_control_state(enabled),
-            height=self.layout_profile.toggle_height,
+
+        kwargs: dict[str, Any] = {
+            "text": text,
+            "variable": self.variable,
+            "command": command,
+            "font": self.font_config.tuple(self.font_role),
+            "state": normalize_control_state(enabled),
+            "height": control_height,
+        }
+        if width is not None:
+            kwargs["width"] = resolve_control_dimension(
+                width,
+                width,
+                field_name="width",
+            )
+
+        self.switch = ctk.CTkSwitch(self.frame, **kwargs)
+        self.switch.grid(
+            row=0,
+            column=0,
+            padx=2,
+            pady=0,
+            sticky="ew",
         )
-        self.switch.grid(row=0, column=0, padx=2, pady=0, sticky="ew")
 
     def grid(self, *args: Any, **kwargs: Any) -> None:
         self.frame.grid(*args, **kwargs)
@@ -778,12 +1368,22 @@ class LabeledSwitch:
         self.variable.set(bool(value))
 
     def set_enabled(self, enabled: bool) -> None:
-        self.switch.configure(state=normalize_control_state(enabled))
+        self.switch.configure(
+            state=normalize_control_state(enabled)
+        )
 
-    def apply_visual_preferences(self, font_config: FontConfig | None = None, color_theme: str | None = None, surface_theme: str | None = None, appearance_mode: str | None = None) -> None:
+    def apply_visual_preferences(
+        self,
+        font_config: FontConfig | None = None,
+        color_theme: str | None = None,
+        surface_theme: str | None = None,
+        appearance_mode: str | None = None,
+    ) -> None:
         if font_config is not None:
             self.font_config = font_config
-            self.switch.configure(font=self.font_config.tuple("body"))
+            self.switch.configure(
+                font=self.font_config.tuple(self.font_role)
+            )
         colors = get_control_colors(appearance_mode, surface_theme)
         accent = get_accent_colors(color_theme)
         try:
@@ -796,9 +1396,8 @@ class LabeledSwitch:
         except Exception:
             pass
 
-
 class ActionButton:
-    """Styled action button that can be placed in sidebar or content cards."""
+    """Styled action button with reusable size and typography."""
 
     def __init__(
         self,
@@ -813,6 +1412,12 @@ class ActionButton:
         color_theme: str | None = "blue",
         surface_theme: str | None = "default",
         appearance_mode: str | None = "dark",
+        *,
+        width: int | None = None,
+        font_role: str = "body",
+        font_weight: str | None = None,
+        anchor: str = "center",
+        icon_text: str = "",
     ) -> None:
         ctk = require_customtkinter()
         self.ctk = ctk
@@ -820,25 +1425,47 @@ class ActionButton:
         self.font_config = font_config or FontConfig().with_size_offset(
             self.layout_profile.font_size_offset
         )
+        self.font_role = str(font_role or "body")
+        self.font_weight = font_weight
         self.style = normalize_button_style(style)
         self.color_theme = str(color_theme or "blue")
         self.surface_theme = str(surface_theme or "default")
         self.appearance_mode = str(appearance_mode or "dark")
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         self.frame.grid_columnconfigure(0, weight=1)
-        options = get_button_style_options(self.style, self.color_theme)
+
+        options = get_button_style_options(
+            self.style,
+            self.color_theme,
+            self.surface_theme,
+            self.appearance_mode,
+        )
+        button_kwargs: dict[str, Any] = {
+            "text": f"{icon_text} {text}".strip(),
+            "command": command,
+            "font": self.font_config.tuple(
+                self.font_role,
+                self.font_weight,
+            ),
+            "state": normalize_control_state(enabled),
+            "height": resolve_control_dimension(
+                height,
+                self.layout_profile.action_height,
+                field_name="height",
+            ),
+            "anchor": anchor,
+            **options,
+        }
+        if width is not None:
+            button_kwargs["width"] = resolve_control_dimension(
+                width,
+                width,
+                field_name="width",
+            )
+
         self.button = ctk.CTkButton(
             self.frame,
-            text=text,
-            command=command,
-            font=self.font_config.tuple("body"),
-            state=normalize_control_state(enabled),
-            height=(
-                self.layout_profile.action_height
-                if height is None
-                else int(height)
-            ),
-            **options,
+            **button_kwargs,
         )
         self.button.grid(row=0, column=0, sticky="ew")
 
@@ -846,7 +1473,9 @@ class ActionButton:
         self.frame.grid(*args, **kwargs)
 
     def set_enabled(self, enabled: bool) -> None:
-        self.button.configure(state=normalize_control_state(enabled))
+        self.button.configure(
+            state=normalize_control_state(enabled)
+        )
 
     def configure(self, **kwargs: Any) -> None:
         self.button.configure(**kwargs)
@@ -860,17 +1489,26 @@ class ActionButton:
     ) -> None:
         if font_config is not None:
             self.font_config = font_config
-            self.button.configure(font=self.font_config.tuple("body"))
+            self.button.configure(
+                font=self.font_config.tuple(
+                    self.font_role,
+                    self.font_weight,
+                )
+            )
         if color_theme is not None:
             self.color_theme = str(color_theme)
         if surface_theme is not None:
             self.surface_theme = str(surface_theme)
         if appearance_mode is not None:
             self.appearance_mode = str(appearance_mode)
-        options = get_button_style_options(self.style, self.color_theme, self.surface_theme, self.appearance_mode)
+        options = get_button_style_options(
+            self.style,
+            self.color_theme,
+            self.surface_theme,
+            self.appearance_mode,
+        )
         if options:
             self.button.configure(**options)
-
 
 class ButtonRow:
     """Reusable row of styled buttons."""

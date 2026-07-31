@@ -3,7 +3,12 @@ from sharedcode_meta import __version__
 GUI_CORE_VERSION = __version__
 
 from .app import GuiAppWindow, build_restart_arguments, create_gui_app_window, restart_current_process
-from .app_config import GuiActionButton, GuiAppConfig, GuiMenuItem
+from .app_config import (
+    GuiActionButton,
+    GuiAppConfig,
+    GuiMenuItem,
+    SidebarConfig,
+)
 from .constants import DEFAULT_APPEARANCE_MODE, DEFAULT_COLOR_THEME, DEFAULT_SURFACE_THEME, DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH
 from .dependencies import GuiDependencyError, is_customtkinter_available, require_customtkinter
 from .dialogs import (
@@ -97,6 +102,7 @@ from .widgets import (
     ChoiceOption,
     ContentPanel,
     LabeledCheckBox,
+    LabeledComboAction,
     LabeledComboBox,
     LabeledEntry,
     LabeledSwitch,
@@ -117,6 +123,8 @@ from .widgets import (
     normalize_button_style,
     normalize_command_key,
     normalize_control_state,
+    resolve_control_dimension,
+    resolve_control_gap,
     normalize_picker_mode,
     normalize_selection_mode,
     row_values_to_mapping,
@@ -156,6 +164,7 @@ __all__ = [
     "ButtonSpec",
     "ChoiceOption",
     "LabeledCheckBox",
+    "LabeledComboAction",
     "LabeledComboBox",
     "LabeledEntry",
     "LabeledSwitch",
@@ -167,6 +176,8 @@ __all__ = [
     "normalize_button_style",
     "normalize_command_key",
     "normalize_control_state",
+    "resolve_control_dimension",
+    "resolve_control_gap",
     "normalize_picker_mode",
     "ContentPanel",
     "DialogButton",
@@ -190,6 +201,7 @@ __all__ = [
     "GuiAppWindow",
     "GuiDependencyError",
     "GuiMenuItem",
+    "SidebarConfig",
     "ProgressPanel",
     "ResultsTable",
     "SectionCard",

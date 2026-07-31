@@ -17,12 +17,16 @@ from gui_core import (
     COMFORTABLE_LAYOUT_PROFILE,
     COMPACT_LAYOUT_PROFILE,
     LAYOUT_PROFILE_NAMES,
+    LabeledComboAction,
+    LabeledComboBox,
     STANDARD_LAYOUT_PROFILE,
     FontConfig,
     GuiLayoutProfile,
+    GuiActionButton,
     GuiAppConfig,
     WindowIconResult,
     GuiMenuItem,
+    SidebarConfig,
     GuiPreferences,
     SecondaryWindowConfig,
     TableCell,
@@ -39,6 +43,8 @@ from gui_core import (
     normalize_button_style,
     normalize_command_key,
     normalize_control_state,
+    resolve_control_dimension,
+    resolve_control_gap,
     normalize_color_theme,
     normalize_color_theme_label,
     normalize_surface_theme,
@@ -152,6 +158,86 @@ class GuiCoreTests(unittest.TestCase):
         self.assertEqual(standard.size("body"), 11)
         self.assertEqual(compact.size("body"), 10)
         self.assertEqual(comfortable.size("body"), 12)
+
+
+    def test_sidebar_config_is_json_safe(self):
+        sidebar = SidebarConfig(
+            header_visible=False,
+            footer_label_visible=False,
+            footer_columns=2,
+            primary_action_columns=2,
+            scrollbar_width=8,
+        )
+        data = sidebar.to_dict()
+        self.assertFalse(data["header_visible"])
+        self.assertFalse(data["footer_label_visible"])
+        self.assertEqual(data["footer_columns"], 2)
+        self.assertEqual(data["primary_action_columns"], 2)
+        self.assertEqual(data["scrollbar_width"], 8)
+
+    def test_sidebar_config_rejects_invalid_geometry(self):
+        with self.assertRaises(ValueError):
+            SidebarConfig(footer_columns=0)
+        with self.assertRaises(ValueError):
+            SidebarConfig(primary_action_columns=5)
+        with self.assertRaises(ValueError):
+            SidebarConfig(scrollbar_width=0)
+
+    def test_gui_app_config_serializes_sidebar_and_primary_actions(self):
+        config = GuiAppConfig(
+            app_name="Tool",
+            sidebar_config=SidebarConfig(
+                footer_columns=2,
+                primary_action_columns=2,
+            ),
+            primary_actions=(
+                GuiActionButton(
+                    "Ejecutar",
+                    "run",
+                    style="primary",
+                    icon_text="▶",
+                ),
+                GuiActionButton(
+                    "Limpiar",
+                    "clear",
+                    style="secondary",
+                ),
+            ),
+        )
+        data = config.to_dict()
+        self.assertEqual(data["sidebar_config"]["footer_columns"], 2)
+        self.assertEqual(
+            data["sidebar_config"]["primary_action_columns"],
+            2,
+        )
+        self.assertEqual(
+            data["primary_actions"][0]["command_key"],
+            "run",
+        )
+        self.assertEqual(
+            data["primary_actions"][0]["icon_text"],
+            "▶",
+        )
+        self.assertEqual(
+            data["primary_actions"][1]["style"],
+            "secondary",
+        )
+
+
+    def test_control_dimension_helpers_validate_values(self):
+        self.assertEqual(resolve_control_dimension(None, 26), 26)
+        self.assertEqual(resolve_control_dimension(31, 26), 31)
+        self.assertEqual(resolve_control_gap(None, 6), 6)
+        self.assertEqual(resolve_control_gap(0, 6), 0)
+
+        with self.assertRaises(ValueError):
+            resolve_control_dimension(0, 26)
+        with self.assertRaises(ValueError):
+            resolve_control_gap(-1, 6)
+
+    def test_compact_control_exports_are_public(self):
+        self.assertTrue(callable(LabeledComboAction))
+        self.assertTrue(callable(LabeledComboBox))
 
     def test_restart_arguments_support_script_and_frozen_apps(self):
         script_args = build_restart_arguments(
@@ -511,7 +597,7 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
         self.assertEqual(loaded, GuiPreferences())
 
     def test_public_version_matches_current_development_line(self):
-        self.assertEqual(__version__, "1.1.0.dev1")
+        self.assertEqual(__version__, "1.1.0.dev3")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):

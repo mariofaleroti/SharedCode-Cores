@@ -39,20 +39,17 @@ Proyecto
 
 ## 2. Compatibilidad obligatoria
 
-GuiCore 1.1.0 será una evolución **aditiva y retrocompatible**.
+GuiCore 1.1.0 define un contrato nuevo para proyectos que migren explícitamente desde la release 1.0.0.
 
 ### Garantías
 
-1. No se elimina ni renombra ninguna API pública de 1.0.0.
-2. Los valores predeterminados nuevos deben reproducir el comportamiento visual
-   de 1.0.0.
-3. Las nuevas capacidades son opcionales.
-4. Los tests públicos de 1.0.0 deben continuar pasando sin modificaciones.
-5. Los proyectos migran individualmente.
-6. El tag, release, wheel y SHA-256 de SharedCode 1.0.0 no se modifican.
-7. Durante desarrollo se utilizará `1.1.0.devN`; las pruebas públicas podrán usar
+1. Los proyectos actuales continúan fijados a SharedCode 1.0.0.
+2. El tag, release, wheel y SHA-256 de SharedCode 1.0.0 no se modifican.
+3. GuiCore 1.1 protege su propio contrato y sus propias pruebas.
+4. Los proyectos migran individualmente y de forma explícita.
+5. Durante desarrollo se utilizará `1.1.0.devN`; las pruebas públicas podrán usar
    prereleases `1.1.0aN` o `1.1.0bN`.
-8. La primera release estable nueva será `1.1.0`.
+6. La primera release estable nueva será `1.1.0`.
 
 ### Predeterminados compatibles
 

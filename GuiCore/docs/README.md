@@ -34,3 +34,7 @@ conserva su lógica, configuración y contratos propios.
 ## Implementación 1.1
 
 - `LAYOUT_PROFILES.md`
+
+- `SIDEBAR_CONFIGURATION.md`
+
+- `COMPACT_CONTROLS.md`

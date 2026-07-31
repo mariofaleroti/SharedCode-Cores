@@ -62,7 +62,6 @@ Estado: **implementada en `1.1.0.dev1`; pendiente validación visual final en Wi
 - crear `GuiLayoutProfile`;
 - perfiles `compact`, `standard`, `comfortable`;
 - conectar perfil con fuentes, controles y padding;
-- mantener `standard` como predeterminado;
 - documentar perfiles personalizados.
 
 ### Pruebas
@@ -70,12 +69,13 @@ Estado: **implementada en `1.1.0.dev1`; pendiente validación visual final en Wi
 - normalización;
 - serialización;
 - valores mínimos;
-- compatibilidad de defaults;
 - demo visual en 1280×720 y escalado de Windows.
 
 ---
 
 ## Fase 3 — Sidebar y footer
+
+Estado: **implementada en `1.1.0.dev2`; pendiente validación visual final en Windows.**
 
 ### Trabajo
 
@@ -104,6 +104,8 @@ ShadowBackup primero; SmartFilter después.
 ---
 
 ## Fase 4 — Controles compactos
+
+Estado: **implementada en `1.1.0.dev3`; pendiente validación visual final en Windows.**
 
 ### Trabajo
 

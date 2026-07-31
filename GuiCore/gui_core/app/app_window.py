@@ -403,6 +403,12 @@ class GuiAppWindow:
     def set_sidebar_action(self, key: str, callback: Callable[[], None]) -> None:
         self.sidebar.set_action(key, callback)
 
+    def set_sidebar_action_enabled(self, key: str, enabled: bool) -> None:
+        self.sidebar.set_action_enabled(key, enabled)
+
+    def get_sidebar_action_button(self, key: str) -> Any | None:
+        return self.sidebar.get_action_button(key)
+
     def add_sidebar_widget(self, widget: Any, **grid_options: Any) -> None:
         row = len(self.sidebar.controls_frame.winfo_children())
         options = {

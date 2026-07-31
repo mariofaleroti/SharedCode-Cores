@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+from tk_test_utils import destroy_tk_root
+
 from gui_core import (
     ChoiceOption,
     LabeledCheckBox,
@@ -29,8 +31,8 @@ class CompactControlsSmokeTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if getattr(cls, "root", None) is not None:
-            cls.root.destroy()
+        destroy_tk_root(getattr(cls, "root", None))
+        cls.root = None
 
     def test_entry_combo_picker_and_switch_accept_compact_overrides(self) -> None:
         entry = LabeledEntry(

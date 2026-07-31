@@ -1,7 +1,7 @@
 # Controles compactos reutilizables — GuiCore 1.1
 
-GuiCore 1.1.0.dev3 incorpora las opciones visuales que SmartFilter había tenido
-que implementar mediante clases privadas.
+GuiCore 1.1.0.dev3 incorpora opciones visuales reutilizables para construir
+formularios densos sin crear clases privadas en cada proyecto.
 
 ## Capacidades comunes
 
@@ -61,14 +61,4 @@ category = section.add_labeled_combo_action(
 `LabeledComboAction` mantiene valores estables mediante `ChoiceOption`, permite
 habilitar solamente el botón auxiliar y comparte temas/fuentes con GuiCore.
 
-## Migración prevista de SmartFilter
-
-```text
-_CompactEntry        → LabeledEntry
-_CompactCombo        → LabeledComboBox
-_CompactPathPicker   → PathPicker
-_CompactSwitch       → LabeledSwitch
-_CompactComboAction  → LabeledComboAction
-```
-
-La lógica de búsqueda y los callbacks permanecen en SmartFilter.
+La lógica, validaciones y callbacks permanecen siempre en el proyecto consumidor.

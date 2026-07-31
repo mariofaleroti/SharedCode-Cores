@@ -50,7 +50,7 @@ def main() -> None:
         "Configuración",
         "Todos los tamaños y espacios provienen del perfil seleccionado.",
     )
-    section.add_labeled_entry("Nombre", value="ShadowBackup")
+    section.add_labeled_entry("Nombre", value="Aplicación Demo")
     section.add_labeled_combo(
         "Modo",
         ("Automático", "Manual", "Solo prueba"),

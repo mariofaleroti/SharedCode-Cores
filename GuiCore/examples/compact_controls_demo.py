@@ -18,7 +18,7 @@ def main() -> None:
     app = GuiAppWindow(
         GuiAppConfig(
             app_name="GuiCore Compact Controls",
-            app_subtitle="Controles reutilizables inspirados en SmartFilter",
+            app_subtitle="Controles reutilizables de alta densidad",
             app_version="1.1.0.dev3",
             layout_profile="compact",
             width=1100,

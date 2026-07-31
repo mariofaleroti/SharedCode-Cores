@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+from tk_test_utils import destroy_tk_root
+
 from gui_core import (
     ActionButton,
     GuiAppConfig,
@@ -26,8 +28,8 @@ class LayoutProfileSmokeTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if getattr(cls, "root", None) is not None:
-            cls.root.destroy()
+        destroy_tk_root(getattr(cls, "root", None))
+        cls.root = None
 
     def test_compact_and_comfortable_controls_use_profile_heights(self) -> None:
         compact_entry = LabeledEntry(
@@ -47,7 +49,7 @@ class LayoutProfileSmokeTests(unittest.TestCase):
         compact_entry.frame.destroy()
         comfortable_button.frame.destroy()
 
-    def test_standard_sidebar_keeps_legacy_footer_height(self) -> None:
+    def test_standard_sidebar_uses_standard_footer_height(self) -> None:
         sidebar = Sidebar(
             self.root,
             GuiAppConfig(
@@ -70,7 +72,8 @@ class LayoutProfileSmokeTests(unittest.TestCase):
         )
 
         self.assertEqual(int(card.frame.cget("corner_radius")), 12)
-        self.assertEqual(int(card.title_label.grid_info()["padx"]), 12)
+        self.assertEqual(int(card.header_frame.grid_info()["padx"]), 12)
+        self.assertEqual(int(card.title_label.grid_info()["padx"]), 0)
         card.frame.destroy()
 
 

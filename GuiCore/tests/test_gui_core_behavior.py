@@ -14,6 +14,8 @@ from gui_core import (
     CardHeaderAction,
     ChoiceOption,
     KeyValueItem,
+    MetricItem,
+    TooltipSpec,
     VALID_STATE_KINDS,
     DialogButton,
     DialogSpec,
@@ -39,6 +41,7 @@ from gui_core import (
     build_restart_arguments,
     coerce_choice_options,
     coerce_key_value_items,
+    coerce_metric_items,
     coerce_row_values,
     get_button_style_options,
     get_choice_labels,
@@ -149,7 +152,7 @@ class GuiCoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             GuiLayoutProfile(name="invalid", control_height=0)
 
-    def test_gui_app_config_defaults_to_legacy_standard_layout(self):
+    def test_gui_app_config_defaults_to_standard_layout(self):
         config = GuiAppConfig(app_name="Tool")
         self.assertEqual(config.resolved_layout_profile, STANDARD_LAYOUT_PROFILE)
         self.assertEqual(config.to_dict()["layout_profile"]["name"], "standard")
@@ -283,6 +286,71 @@ class GuiCoreTests(unittest.TestCase):
         self.assertEqual(items[0].semantic, "success")
         self.assertEqual(items[1].value, "Correcta")
         self.assertEqual(items[2].field, "Rutas")
+
+
+    def test_tooltip_spec_is_json_safe_and_validated(self):
+        spec = TooltipSpec(
+            "Descripción",
+            title="Ayuda",
+            delay_ms=500,
+            visible_ms=2500,
+            wraplength=280,
+        )
+        data = spec.to_dict()
+        self.assertEqual(data["text"], "Descripción")
+        self.assertEqual(data["title"], "Ayuda")
+        self.assertEqual(data["visible_ms"], 2500)
+
+        with self.assertRaises(ValueError):
+            TooltipSpec("Texto", delay_ms=-1)
+        with self.assertRaises(ValueError):
+            TooltipSpec("Texto", wraplength=0)
+
+    def test_metric_items_accept_mapping_and_sequences(self):
+        mapped = coerce_metric_items(
+            {
+                "Procesados": 120,
+                "Advertencias": 2,
+            }
+        )
+        self.assertEqual(
+            [item.title for item in mapped],
+            ["Procesados", "Advertencias"],
+        )
+
+        metrics = coerce_metric_items(
+            (
+                MetricItem(
+                    "status",
+                    "Estado",
+                    "Operativo",
+                    semantic="success",
+                ),
+                {
+                    "key": "duration",
+                    "title": "Duración",
+                    "value": "00:32",
+                    "tooltip": "Tiempo total.",
+                },
+                (
+                    "errors",
+                    "Errores",
+                    0,
+                    "Sin incidencias",
+                    "success",
+                ),
+            )
+        )
+        self.assertEqual(len(metrics), 3)
+        self.assertEqual(metrics[0].semantic, "success")
+        self.assertEqual(metrics[1].tooltip, "Tiempo total.")
+        self.assertEqual(metrics[2].detail, "Sin incidencias")
+
+    def test_metric_item_rejects_empty_contract_fields(self):
+        with self.assertRaises(ValueError):
+            MetricItem("", "Estado", "OK")
+        with self.assertRaises(ValueError):
+            MetricItem("status", "", "OK")
 
     def test_restart_arguments_support_script_and_frozen_apps(self):
         script_args = build_restart_arguments(
@@ -429,7 +497,7 @@ class GuiCoreTests(unittest.TestCase):
         self.assertEqual(row_values_to_mapping([1, "Tool", "OK"], columns), {"index": 1, "name": "Tool", "status": "OK"})
 
     def test_table_cell_and_sort_state_are_json_safe(self):
-        cell = TableCell("item1", 0, "name", "Nombre", "SmartFilter", {"name": "SmartFilter"})
+        cell = TableCell("item1", 0, "name", "Nombre", "Tool Alpha", {"name": "Tool Alpha"})
         self.assertEqual(cell.to_dict()["column_key"], "name")
         self.assertEqual(TableSortState("name", True).to_dict(), {"column_key": "name", "reverse": True})
 
@@ -642,7 +710,7 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
         self.assertEqual(loaded, GuiPreferences())
 
     def test_public_version_matches_current_development_line(self):
-        self.assertEqual(__version__, "1.1.0.dev4")
+        self.assertEqual(__version__, "1.1.0.dev5")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):

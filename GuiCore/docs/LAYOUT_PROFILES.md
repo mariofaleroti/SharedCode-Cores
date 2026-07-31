@@ -7,7 +7,7 @@ la lógica de un proyecto.
 
 ```text
 compact      → herramientas con muchas opciones o pantallas pequeñas
-standard     → comportamiento compatible con GuiCore 1.0.0
+standard     → densidad equilibrada predeterminada de GuiCore 1.1
 comfortable → interfaces con mayor separación y accesibilidad visual
 ```
 
@@ -20,7 +20,7 @@ from gui_core import GuiAppConfig, GuiAppWindow
 
 app = GuiAppWindow(
     GuiAppConfig(
-        app_name="ShadowBackup",
+        app_name="ApplicationDemo",
         layout_profile="compact",
     )
 )
@@ -50,10 +50,9 @@ config = GuiAppConfig(
 
 Todos los valores son inmutables y serializables mediante `to_dict()`.
 
-## Compatibilidad
+## Perfil predeterminado
 
-`standard` es el perfil predeterminado y conserva los valores históricos más
-importantes de GuiCore 1.0.0:
+`standard` es el perfil predeterminado del contrato GuiCore 1.1:
 
 ```text
 control_height     28
@@ -66,8 +65,8 @@ card_inner_pad_x   16
 card_corner_radius 14
 ```
 
-Los proyectos que no declaren `layout_profile` mantienen el comportamiento
-anterior.
+Los proyectos que migren a GuiCore 1.1 y no declaren `layout_profile` reciben
+el perfil `standard`.
 
 ## Límite
 

@@ -30,12 +30,15 @@ from ..widgets import (
     CardHeaderAction,
     CollapsibleSectionCard,
     ContentPanel,
+    MetricItem,
+    MetricStrip,
     ProgressPanel,
     ResultsTable,
     SectionCard,
     Sidebar,
     SidebarFormSection,
     StatusBar,
+    WidgetTooltip,
 )
 
 
@@ -72,6 +75,42 @@ def restart_current_process() -> None:
         # Fallback for environments where execv cannot replace the GUI process.
         subprocess.Popen(args, close_fds=True)
         os._exit(0)
+
+
+def _cancel_pending_after_callbacks(root: Any) -> None:
+    """Cancel Tk callbacks that would otherwise run after window teardown."""
+
+    if root is None:
+        return
+
+    for _ in range(4):
+        try:
+            pending = root.tk.call("after", "info")
+        except Exception:
+            return
+
+        if isinstance(pending, str):
+            try:
+                callback_ids = tuple(root.tk.splitlist(pending))
+            except Exception:
+                callback_ids = (pending,) if pending else ()
+        else:
+            try:
+                callback_ids = tuple(pending)
+            except TypeError:
+                callback_ids = ()
+
+        if not callback_ids:
+            return
+
+        for callback_id in callback_ids:
+            try:
+                root.after_cancel(callback_id)
+            except Exception:
+                try:
+                    root.tk.call("after", "cancel", callback_id)
+                except Exception:
+                    pass
 
 
 class GuiAppWindow:
@@ -409,7 +448,24 @@ class GuiAppWindow:
         self.root.mainloop()
 
     def destroy(self) -> None:
-        self.root.destroy()
+        try:
+            exists = bool(self.root.winfo_exists())
+        except Exception:
+            exists = False
+
+        if not exists:
+            return
+
+        _cancel_pending_after_callbacks(self.root)
+        try:
+            self.root.quit()
+        except Exception:
+            pass
+        _cancel_pending_after_callbacks(self.root)
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
 
     def set_sidebar_action(self, key: str, callback: Callable[[], None]) -> None:
         self.sidebar.set_action(key, callback)
@@ -588,6 +644,56 @@ class GuiAppWindow:
                 commands=commands,
                 font_config=self.font_config,
                 layout_profile=self.layout_profile,
+            )
+        )
+
+
+    def create_metric_strip(
+        self,
+        parent: Any,
+        metrics: Iterable[MetricItem | Mapping[str, Any] | Sequence[Any]]
+        | Mapping[str, Any],
+        *,
+        columns: int = 4,
+        tooltip_delay_ms: int = 800,
+        tooltip_visible_ms: int = 4000,
+    ) -> MetricStrip:
+        return self.register_visual_component(
+            MetricStrip(
+                parent,
+                metrics,
+                font_config=self.font_config,
+                layout_profile=self.layout_profile,
+                columns=columns,
+                tooltip_delay_ms=tooltip_delay_ms,
+                tooltip_visible_ms=tooltip_visible_ms,
+            )
+        )
+
+    def add_tooltip(
+        self,
+        widget: Any,
+        text: str,
+        *,
+        title: str = "",
+        delay_ms: int = 800,
+        visible_ms: int = 4000,
+        wraplength: int = 320,
+        bind_descendants: bool = True,
+    ) -> WidgetTooltip:
+        return self.register_visual_component(
+            WidgetTooltip(
+                widget,
+                text,
+                title=title,
+                delay_ms=delay_ms,
+                visible_ms=visible_ms,
+                wraplength=wraplength,
+                bind_descendants=bind_descendants,
+                font_config=self.font_config,
+                color_theme=self.preferences.color_theme,
+                surface_theme=self.preferences.surface_theme,
+                appearance_mode=self._runtime_appearance_mode,
             )
         )
 

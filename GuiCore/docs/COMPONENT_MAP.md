@@ -30,6 +30,9 @@
 | `SectionCard` | Card/panel reusable. |
 | `ProgressPanel` | Progreso de operación activa. |
 | `StatusBar` | Estado general inferior. |
+| `MetricCard` | Presentación de una métrica individual. |
+| `MetricStrip` | Distribución declarativa de varias métricas. |
+| `WidgetTooltip` | Ayuda contextual genérica para widgets. |
 
 ## Resultados
 

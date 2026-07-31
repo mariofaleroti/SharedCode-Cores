@@ -132,7 +132,7 @@ SmartFilter puede eliminar las clases `_Compact*`.
 
 ## Fase 5 — Tarjetas y componentes de estado
 
-Estado: **Fase 5A implementada en `1.1.0.dev4`: tarjetas flexibles, colapso, tabla clave/valor y estado vacío. Métricas y tooltips quedan para Fase 5B.**
+Estado: **Fase 5 completa en `1.1.0.dev5`: tarjetas flexibles, colapso, estados, métricas semánticas y tooltips genéricos.**
 
 ### Trabajo
 
@@ -204,7 +204,7 @@ Debe demostrar:
 - quickstart 1.1;
 - mapa de componentes;
 - guía de migración 1.0 → 1.1;
-- contrato de compatibilidad;
+- contrato público de GuiCore 1.1;
 - ejemplos completos.
 
 ---
@@ -276,7 +276,7 @@ Publicar `v1.1.0` únicamente cuando:
 - wheel reproducible;
 - SHA-256 registrado;
 - API pública documentada;
-- no existen regresiones en APIs 1.0.0.
+- la suite acumulativa del contrato 1.1 pasa sin fallos.
 
 ---
 

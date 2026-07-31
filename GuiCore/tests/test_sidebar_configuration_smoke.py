@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+from tk_test_utils import destroy_tk_root
+
 from gui_core import (
     GuiActionButton,
     GuiAppConfig,
@@ -26,8 +28,8 @@ class SidebarConfigurationSmokeTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if getattr(cls, "root", None) is not None:
-            cls.root.destroy()
+        destroy_tk_root(getattr(cls, "root", None))
+        cls.root = None
 
     def test_two_column_footer_and_fixed_actions(self) -> None:
         calls = []

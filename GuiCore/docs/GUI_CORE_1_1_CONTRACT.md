@@ -37,7 +37,7 @@ Proyecto
 
 ---
 
-## 2. Compatibilidad obligatoria
+## 2. Política de versiones
 
 GuiCore 1.1.0 define un contrato nuevo para proyectos que migren explícitamente desde la release 1.0.0.
 
@@ -51,7 +51,7 @@ GuiCore 1.1.0 define un contrato nuevo para proyectos que migren explícitamente
    prereleases `1.1.0aN` o `1.1.0bN`.
 6. La primera release estable nueva será `1.1.0`.
 
-### Predeterminados compatibles
+### Predeterminados de GuiCore 1.1
 
 ```python
 layout_profile = "standard"
@@ -59,8 +59,8 @@ visual_preferences = "advanced"
 sidebar_footer_layout = "single_column"
 ```
 
-Una aplicación existente que no use las opciones nuevas debe conservar su
-estructura actual.
+Estos valores pertenecen al contrato de GuiCore 1.1. Los proyectos basados en
+1.0.0 permanecen fijados a esa release hasta realizar una migración explícita.
 
 ---
 
@@ -309,7 +309,7 @@ datos reales.
 
 ## 9. Métricas
 
-GuiCore incorporará componentes visuales, no interpretación de métricas.
+GuiCore incorpora componentes visuales, no interpretación de métricas.
 
 ```text
 MetricCard
@@ -340,7 +340,7 @@ MetricItem(
 
 ## 10. Tooltips
 
-Se añadirá un tooltip genérico para widgets CustomTkinter/Tkinter.
+GuiCore incluye un tooltip genérico para widgets CustomTkinter/Tkinter.
 
 ```python
 WidgetTooltip(
@@ -423,7 +423,7 @@ advanced
 
 ### advanced
 
-- todas las preferencias de 1.0.0;
+- conjunto completo de preferencias visuales;
 - acento;
 - superficie;
 - fuente;
@@ -431,7 +431,7 @@ advanced
 - densidad;
 - tema.
 
-El valor predeterminado será `advanced` para conservar compatibilidad.
+El valor predeterminado del contrato 1.1 será `advanced`.
 
 ---
 
@@ -440,8 +440,8 @@ El valor predeterminado será `advanced` para conservar compatibilidad.
 ```python
 app = GuiAppWindow(
     GuiAppConfig(
-        app_name="ShadowBackup",
-        app_version="1.0.0",
+        app_name="ApplicationDemo",
+        app_version="1.1.0",
         layout_profile="compact",
         visual_preferences="basic",
         sidebar=SidebarConfig(
@@ -480,13 +480,13 @@ reducir el alcance funcional aquí definido sin una decisión explícita.
 
 GuiCore 1.1.0 no se considera listo hasta cumplir:
 
-1. Todos los tests de 1.0.0 continúan pasando.
+1. La suite acumulativa de GuiCore 1.1 pasa sin fallos.
 2. `ResultsTable(enable_sorting=False)` abre realmente.
-3. Una demo compacta funciona en Windows y Linux.
-4. La GUI de ShadowBackup deja de modificar internamente sidebar/footer.
-5. ShadowBackup puede declarar proporciones de paneles sin acceder a `.frame`.
-6. SmartFilter puede eliminar sus clases `_Compact*`.
-7. SmartFilter puede eliminar su implementación propia de tooltip.
-8. SmartFilter puede reemplazar su footer manual por GuiCore.
-9. Las operaciones largas no actualizan Tk desde el worker.
-10. Ningún componente nuevo contiene lógica de SmartFilter o ShadowBackup.
+3. Una demo integral funciona en Windows y Linux.
+4. Sidebar, footer y proporciones de paneles se declaran mediante APIs públicas.
+5. Los controles compactos no requieren clases privadas del consumidor.
+6. Las tarjetas plegables administran su propio ciclo visual.
+7. Tooltips y métricas son componentes genéricos.
+8. Las operaciones largas no actualizan Tk desde el worker.
+9. Wheel, exports y documentación corresponden al contrato 1.1.
+10. Ningún componente nuevo contiene lógica de un proyecto consumidor.

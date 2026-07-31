@@ -268,7 +268,7 @@ class TreeviewCellTooltip:
 
 
 class ResultsTable:
-    """Reusable ttk.Treeview table with SmartFilter-inspired behavior.
+    """Reusable ttk.Treeview table with product-oriented behavior.
 
     Responsibilities:
     - visual table layout and style;

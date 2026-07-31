@@ -40,3 +40,5 @@ conserva su lógica, configuración y contratos propios.
 - `COMPACT_CONTROLS.md`
 
 - `CARDS_AND_STATE_COMPONENTS.md`
+
+- `METRICS_AND_TOOLTIPS.md`

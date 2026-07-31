@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 import unittest
 
+from tk_test_utils import destroy_tk_root
+
 from gui_core import ResultsTable, TableColumn
 
 
@@ -22,8 +24,8 @@ class ResultsTableSmokeTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if getattr(cls, "root", None) is not None:
-            cls.root.destroy()
+        destroy_tk_root(getattr(cls, "root", None))
+        cls.root = None
 
     def test_table_opens_when_sorting_is_disabled(self) -> None:
         frame = ttk.Frame(self.root)

@@ -22,6 +22,12 @@ from .form_controls import (
     normalize_picker_mode,
 )
 from .progress_panel import ProgressPanel
+from .metrics import (
+    MetricCard,
+    MetricItem,
+    MetricStrip,
+    coerce_metric_items,
+)
 from .results_table import (
     ResultsTable,
     TableCell,
@@ -45,6 +51,11 @@ from .state_components import (
     get_semantic_text_color,
     normalize_state_kind,
 )
+from .tooltip import (
+    TooltipSpec,
+    WidgetTooltip,
+    iter_widget_tree,
+)
 from .sidebar import Sidebar
 from .status_bar import StatusBar
 
@@ -64,6 +75,9 @@ __all__ = [
     "LabeledComboBox",
     "LabeledEntry",
     "LabeledSwitch",
+    "MetricCard",
+    "MetricItem",
+    "MetricStrip",
     "PathPicker",
     "ProgressPanel",
     "ResultsTable",
@@ -74,13 +88,17 @@ __all__ = [
     "TableCell",
     "TableColumn",
     "TableSortState",
+    "TooltipSpec",
     "VALID_STATE_KINDS",
+    "WidgetTooltip",
     "coerce_choice_options",
     "coerce_key_value_items",
+    "coerce_metric_items",
     "coerce_row_values",
     "get_button_style_options",
     "get_choice_labels",
     "get_semantic_text_color",
+    "iter_widget_tree",
     "normalize_button_style",
     "normalize_command_key",
     "normalize_control_state",

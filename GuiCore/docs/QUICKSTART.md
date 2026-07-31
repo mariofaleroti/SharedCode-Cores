@@ -91,7 +91,7 @@ results_table = ResultsTable(
 app.register_results_table(results_table)
 results_table.pack(fill="both", expand=True)
 results_table.set_rows([
-    {"index": 1, "name": "SmartFilter", "status": "Producto", "detail": "Referencia visual."},
+    {"index": 1, "name": "Tool Alpha", "status": "Ready", "detail": "Generic visual example."},
 ])
 ```
 

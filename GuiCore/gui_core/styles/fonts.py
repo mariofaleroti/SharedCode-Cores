@@ -61,7 +61,7 @@ APP_FONT_ROLE_SIZES: Dict[str, Dict[str, int]] = {
 
 @dataclass(frozen=True)
 class FontConfig:
-    """Shared font preferences inspired by SmartFilter's final UI."""
+    """Shared font preferences for GuiCore applications."""
 
     family: str = "Segoe UI"
     size_option: str = "Normal"

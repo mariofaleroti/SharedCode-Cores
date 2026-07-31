@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+from tk_test_utils import destroy_tk_root
+
 from gui_core import (
     CardHeaderAction,
     CollapsibleSectionCard,
@@ -29,8 +31,8 @@ class CardsStateSmokeTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if getattr(cls, "root", None) is not None:
-            cls.root.destroy()
+        destroy_tk_root(getattr(cls, "root", None))
+        cls.root = None
 
     def test_section_card_header_action_invokes_callback(self) -> None:
         calls = []
@@ -155,7 +157,7 @@ class CardsStateSmokeTests(unittest.TestCase):
             int(app.content_panel.frame.grid_rowconfigure(second_row)["weight"]),
             1,
         )
-        app.root.destroy()
+        app.destroy()
 
 
 if __name__ == "__main__":

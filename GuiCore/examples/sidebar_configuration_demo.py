@@ -57,7 +57,7 @@ def main() -> None:
         "Configuración",
         "Las acciones principales permanecen visibles fuera del scroll.",
     )
-    section.add_labeled_entry("Nombre", value="ShadowBackup")
+    section.add_labeled_entry("Nombre", value="Aplicación Demo")
     section.add_labeled_combo(
         "Modo",
         ("Automático", "Manual", "Simulación"),

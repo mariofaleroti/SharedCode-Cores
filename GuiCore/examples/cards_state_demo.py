@@ -40,8 +40,8 @@ def main() -> None:
     )
 
     status_card = app.add_content_card(
-        "Estado de ShadowBackup",
-        "Panel principal declarado sin acceder a .frame.",
+        "Estado de la aplicación",
+        "Panel principal declarado mediante la API pública.",
         row_weight=3,
         min_height=360,
         sticky="nsew",
@@ -51,8 +51,8 @@ def main() -> None:
         status_card.content_frame,
         (
             KeyValueItem("Estado general", "Operativo", "success"),
-            KeyValueItem("Tarea programada", "Instalada"),
-            KeyValueItem("Frecuencia", "Cada 5 minutos"),
+            KeyValueItem("Servicio principal", "Instalada"),
+            KeyValueItem("Frecuencia", "Cada 10 minutos"),
             KeyValueItem("Sincronización", "Correcta", "ready"),
             KeyValueItem("Última ejecución", "Correcta", "success"),
         ),
@@ -62,17 +62,17 @@ def main() -> None:
     app.register_visual_component(status_table)
 
     paths_card = app.add_collapsible_card(
-        "Rutas supervisadas",
-        "Repositorios buscados por ShadowBackup.",
+        "Elementos supervisados",
+        "Elementos configurados por la aplicación.",
         row_weight=1,
         min_height=150,
         sticky="nsew",
-        collapsed_summary="2 rutas configuradas",
+        collapsed_summary="2 elementos configurados",
     )
     empty = EmptyState(
         paths_card.content_frame,
-        "Sin rutas adicionales",
-        "Agregar rutas desde la configuración del proyecto.",
+        "Sin elementos adicionales",
+        "Agregar elementos desde la configuración de la aplicación.",
         state="empty",
         action_text="Simular acción",
         action_command=lambda: app.set_status(

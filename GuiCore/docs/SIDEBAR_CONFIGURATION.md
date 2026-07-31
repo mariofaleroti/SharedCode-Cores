@@ -7,7 +7,7 @@ internos ni acceder a atributos privados.
 
 ```python
 GuiAppConfig(
-    app_name="ShadowBackup",
+    app_name="ApplicationDemo",
     layout_profile="compact",
     sidebar_config=SidebarConfig(
         footer_label_visible=False,

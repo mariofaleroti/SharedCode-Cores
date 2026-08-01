@@ -13,6 +13,7 @@ from platform_core import (
     UnsupportedPlatformError,
     build_open_folder_command,
     build_open_path_command,
+    build_portable_path_variables,
     build_reveal_in_folder_command,
     get_app_data_dir,
     get_cache_dir,
@@ -53,8 +54,11 @@ class PlatformCoreBehaviorTests(unittest.TestCase):
     def test_normalize_path_and_display_keep_pathlike_values(self) -> None:
         path = normalize_path("~/Example", expand_user=False)
         self.assertIsInstance(path, Path)
-        self.assertEqual(str(path), "~/Example")
-        self.assertEqual(path_to_display(Path("folder") / "file.txt"), str(Path("folder") / "file.txt"))
+        self.assertEqual(path, Path("~/Example"))
+        self.assertEqual(
+            path_to_display(Path("folder") / "file.txt"),
+            str(Path("folder") / "file.txt"),
+        )
 
     def test_windows_directories_use_local_app_data(self) -> None:
         env = {
@@ -124,6 +128,7 @@ class PlatformCoreBehaviorTests(unittest.TestCase):
                 platform_name=PLATFORM_LINUX,
                 env={},
                 home=home,
+                resolve=False,
             ),
             home / "Documents" / "Proyectos",
         )
@@ -134,6 +139,7 @@ class PlatformCoreBehaviorTests(unittest.TestCase):
                 platform_name=PLATFORM_LINUX,
                 env={},
                 home=home,
+                resolve=False,
             ),
             base_dir / "config" / "settings.json",
         )
@@ -146,9 +152,68 @@ class PlatformCoreBehaviorTests(unittest.TestCase):
                 platform_name=PLATFORM_LINUX,
                 env={},
                 home=home,
+                resolve=False,
             ),
             [config_dir / "a.json", output_dir / "b.json"],
         )
+
+    def test_portable_variable_map_preserves_paths_when_not_resolving(self) -> None:
+        home = Path("/home/tester")
+        base_dir = home / "Projects" / "ShadowBackup"
+        config_dir = base_dir / "config"
+
+        variables = build_portable_path_variables(
+            base_dir=base_dir,
+            config_dir=config_dir,
+            platform_name=PLATFORM_LINUX,
+            env={},
+            home=home,
+            resolve=False,
+        )
+
+        self.assertEqual(variables["BASE_DIR"], base_dir)
+        self.assertEqual(variables["PROJECT_ROOT"], base_dir)
+        self.assertEqual(variables["CONFIG_DIR"], config_dir)
+        self.assertEqual(
+            variables["DOCUMENTS"],
+            home / "Documents",
+        )
+
+    def test_rooted_portable_token_is_not_rebased_under_base_dir(self) -> None:
+        home = Path("/home/tester")
+        base_dir = home / "Projects" / "ShadowBackup"
+
+        resolved = resolve_portable_path(
+            "${DOCUMENTS}/Proyectos",
+            base_dir=base_dir,
+            platform_name=PLATFORM_LINUX,
+            env={},
+            home=home,
+            resolve=False,
+        )
+
+        self.assertEqual(
+            resolved,
+            home / "Documents" / "Proyectos",
+        )
+        self.assertNotIn(
+            str(base_dir),
+            str(resolved),
+        )
+
+    def test_resolve_portable_path_resolves_against_real_host_base(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base_dir = Path(temp_dir)
+
+            resolved = resolve_portable_path(
+                "config/settings.json",
+                base_dir=base_dir,
+            )
+
+            self.assertEqual(
+                resolved,
+                (base_dir / "config" / "settings.json").resolve(),
+            )
 
     def test_resolve_portable_path_rejects_unknown_token(self) -> None:
         with self.assertRaises(ValueError):

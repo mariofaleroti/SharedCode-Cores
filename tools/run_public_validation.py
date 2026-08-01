@@ -59,37 +59,91 @@ def python_path_env() -> dict[str, str]:
     return env
 
 
+LOCAL_ROOT_DIR_NAMES = {".git", ".venv"}
+GENERATED_DIR_NAMES = {
+    "__pycache__",
+    "build",
+    "dist",
+    "output",
+    ".pytest_cache",
+    "sharedcode_cores.egg-info",
+}
+GENERATED_SUFFIXES = {".pyc", ".pyo", ".pyd"}
+
+
+def _walk_public_tree() -> object:
+    """Walk the public source tree without entering local infrastructure.
+
+    `.git` and `.venv` are valid local roots when validation runs from a real
+    clone. They are not release payload, so neither cleanup nor validation may
+    inspect or mutate them.
+    """
+
+    for current_root, dir_names, file_names in os.walk(ROOT, topdown=True):
+        current = Path(current_root)
+
+        if current == ROOT:
+            dir_names[:] = [
+                name
+                for name in dir_names
+                if name not in LOCAL_ROOT_DIR_NAMES
+            ]
+
+        yield current, dir_names, file_names
+
+
 def cleanup_generated() -> None:
-    for name in ("build", "dist", ".pytest_cache", "sharedcode_cores.egg-info"):
-        path = ROOT / name
-        if path.is_dir():
-            shutil.rmtree(path)
-        elif path.exists():
-            path.unlink()
+    """Remove generated project artifacts without touching `.git` or `.venv`."""
 
-    for path in sorted(ROOT.rglob("__pycache__"), reverse=True):
-        if path.is_dir():
-            shutil.rmtree(path)
+    for current, dir_names, file_names in _walk_public_tree():
+        for name in tuple(dir_names):
+            if name not in GENERATED_DIR_NAMES:
+                continue
 
-    for pattern in ("*.pyc", "*.pyo", "*.pyd"):
-        for path in ROOT.rglob(pattern):
-            path.unlink(missing_ok=True)
+            path = current / name
+            if path.is_dir():
+                shutil.rmtree(path)
+            elif path.exists():
+                path.unlink()
+
+            dir_names.remove(name)
+
+        for name in file_names:
+            path = current / name
+            if path.suffix.lower() in GENERATED_SUFFIXES:
+                path.unlink(missing_ok=True)
 
 
 def validate_tree() -> None:
-    forbidden_names = {".git", "__pycache__", "build", "dist", "output", ".pytest_cache"}
-    forbidden_suffixes = {".pyc", ".pyo", ".pyd"}
+    """Reject generated artifacts in the public tree.
+
+    Only the offending directory itself is reported; descendants are pruned so
+    one stale directory cannot produce thousands of redundant error lines.
+    """
+
     problems: list[str] = []
 
-    for path in ROOT.rglob("*"):
-        relative = path.relative_to(ROOT)
-        if any(part in forbidden_names for part in relative.parts):
+    for current, dir_names, file_names in _walk_public_tree():
+        for name in tuple(dir_names):
+            if name not in GENERATED_DIR_NAMES:
+                continue
+
+            relative = (current / name).relative_to(ROOT)
             problems.append(str(relative))
-        if path.is_file() and path.suffix.lower() in forbidden_suffixes:
-            problems.append(str(relative))
+            dir_names.remove(name)
+
+        for name in file_names:
+            path = current / name
+            if path.suffix.lower() not in GENERATED_SUFFIXES:
+                continue
+
+            problems.append(str(path.relative_to(ROOT)))
 
     if problems:
-        raise RuntimeError("Forbidden generated files found:\n" + "\n".join(sorted(problems)))
+        raise RuntimeError(
+            "Forbidden generated files found:\n"
+            + "\n".join(sorted(set(problems)))
+        )
 
 
 def run_tests() -> None:
@@ -109,6 +163,7 @@ def run_tests() -> None:
         "ToolRuntimeCore/tests",
         "RenderCore/tests/document_highlight_test.py",
         "RenderCore/tests/document_highlight_pro_test.py",
+        "tools/tests",
     ]
     run([sys.executable, "-m", "pytest", "-q", *targets], env=python_path_env())
 

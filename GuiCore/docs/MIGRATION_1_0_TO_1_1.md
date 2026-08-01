@@ -38,7 +38,7 @@ GuiAppConfig(
 
 - `none`: no muestra la acción común de configuración;
 - `basic`: tema, fuente, tamaño y densidad;
-- `advanced`: paleta, superficie, tema, fuente, tamaño y densidad.
+- `advanced`: selectores de acento y superficie, tema, fuente, tamaño y densidad.
 
 ## Límite arquitectónico
 

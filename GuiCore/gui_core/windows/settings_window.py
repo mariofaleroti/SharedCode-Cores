@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Mapping
+from typing import Any, Callable
 
 from ..dependencies import require_customtkinter
 from ..preferences import (
@@ -27,120 +27,6 @@ from ..visual_preferences import (
 from .secondary_window import SecondaryWindow, SecondaryWindowConfig
 
 PreferencesCallback = Callable[[GuiPreferences], None]
-ColorProvider = Callable[[str], Mapping[str, str]]
-
-
-class ColorPreviewBar:
-    """Clickable preview strip for accent or surface palettes."""
-
-    def __init__(
-        self,
-        parent: Any,
-        title: str,
-        color_options: list[ChoiceOption],
-        selected_label: str,
-        color_provider: ColorProvider,
-        font_config: FontConfig | None = None,
-        on_select: Callable[[str], None] | None = None,
-        columns: int = 12,
-        swatch_size: int = 24,
-    ) -> None:
-        self.font_config = font_config or FontConfig()
-        self.title = title
-        self.color_options = color_options
-        self.selected_label = selected_label
-        self.color_provider = color_provider
-        self.on_select = on_select
-        self.columns = max(1, int(columns))
-        self.swatch_size = max(18, int(swatch_size))
-        self._last_surface_theme: str | None = None
-        self._last_appearance_mode: str | None = None
-        self.ctk = require_customtkinter()
-
-        self.frame = self.ctk.CTkFrame(parent, fg_color="transparent")
-        self.frame.grid_columnconfigure(0, weight=1)
-
-        self.label = self.ctk.CTkLabel(
-            self.frame,
-            text=title,
-            font=self.font_config.tuple("small", "bold"),
-            text_color=("gray30", "gray72"),
-            anchor="w",
-        )
-        self.label.grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 4))
-
-        self.swatch_frame = self.ctk.CTkFrame(self.frame, fg_color="transparent")
-        self.swatch_frame.grid(row=1, column=0, sticky="ew")
-
-        self._buttons: dict[str, Any] = {}
-        self._build_buttons()
-        self.select(selected_label, notify=False)
-
-    def _build_buttons(self) -> None:
-        for index, option in enumerate(self.color_options):
-            colors = self.color_provider(str(option.resolved_value))
-            button = self.ctk.CTkButton(
-                self.swatch_frame,
-                text="",
-                width=self.swatch_size,
-                height=self.swatch_size,
-                corner_radius=7,
-                fg_color=colors["primary"],
-                hover_color=colors.get("hover", colors["primary"]),
-                border_width=1,
-                border_color=("#d1d5db", "#667085"),
-                command=lambda label=option.label: self.select(label),
-            )
-            row = index // self.columns
-            column = index % self.columns
-            # Compact swatches: no visual gap between colors, so the strip feels
-            # closer to a color picker while remaining dependency-free.
-            button.grid(row=row, column=column, padx=(0, 1), pady=(0, 1), sticky="w")
-            self._buttons[option.label] = button
-
-    def grid(self, *args: Any, **kwargs: Any) -> None:
-        self.frame.grid(*args, **kwargs)
-
-    def select(self, label: str, notify: bool = True) -> None:
-        self.selected_label = label
-        for button_label, button in self._buttons.items():
-            selected = button_label == label
-            button.configure(
-                border_width=3 if selected else 1,
-                border_color=("#ffffff", "#ffffff") if selected else ("#d1d5db", "#667085"),
-            )
-        if notify and callable(self.on_select):
-            self.on_select(label)
-
-    def apply_visual_preferences(
-        self,
-        font_config: FontConfig | None = None,
-        surface_theme: str | None = None,
-        appearance_mode: str | None = None,
-    ) -> None:
-        if font_config is not None:
-            self.font_config = font_config
-            self.label.configure(font=self.font_config.tuple("small", "bold"))
-        self._last_surface_theme = surface_theme
-        self._last_appearance_mode = appearance_mode
-        colors = get_control_colors(appearance_mode, surface_theme)
-        try:
-            self.label.configure(text_color=colors["label_text_color"])
-            self.frame.configure(fg_color="transparent")
-            self.swatch_frame.configure(fg_color="transparent")
-        except Exception:
-            pass
-        self.select(self.selected_label, notify=False)
-
-
-def _accent_preview_colors(raw_value: str) -> Mapping[str, str]:
-    colors = get_accent_colors(raw_value)
-    return {"primary": colors["primary"], "hover": colors["hover"]}
-
-
-def _surface_preview_colors(raw_value: str) -> Mapping[str, str]:
-    colors = get_surface_colors("dark", raw_value)
-    return {"primary": colors["card"], "hover": colors["card_alt"]}
 
 
 class SettingsWindow(SecondaryWindow):
@@ -170,9 +56,9 @@ class SettingsWindow(SecondaryWindow):
                     else "Preferencias visuales avanzadas."
                 ),
                 width=680 if is_basic else 760,
-                height=500 if is_basic else 600,
+                height=500 if is_basic else 540,
                 min_width=640 if is_basic else 700,
-                min_height=440 if is_basic else 520,
+                min_height=440 if is_basic else 470,
                 modal=True,
                 resizable=(False, False),
             ),
@@ -353,7 +239,6 @@ class SettingsWindow(SecondaryWindow):
             surface_options,
             default_value=normalize_surface_theme_label(self.preferences.surface_theme),
             font_config=self.font_config,
-            command=self._on_surface_combo_changed,
         )
         self.surface_theme_combo.grid(row=1, column=1, sticky="ew", padx=(6, 12), pady=(0, 6))
 
@@ -364,35 +249,8 @@ class SettingsWindow(SecondaryWindow):
             accent_options,
             default_value=normalize_color_theme_label(self.preferences.color_theme),
             font_config=self.font_config,
-            command=self._on_accent_combo_changed,
         )
         self.color_theme_combo.grid(row=2, column=0, sticky="ew", padx=(12, 6), pady=(0, 6))
-
-        self.accent_preview_bar = ColorPreviewBar(
-            self.palette_group,
-            "Vista rápida de acento",
-            accent_options,
-            selected_label=normalize_color_theme_label(self.preferences.color_theme),
-            color_provider=_accent_preview_colors,
-            font_config=self.font_config,
-            on_select=self._on_accent_swatch_selected,
-            columns=12,
-            swatch_size=21,
-        )
-        self.accent_preview_bar.grid(row=3, column=0, sticky="ew", padx=(12, 6), pady=(0, 8))
-
-        self.surface_preview_bar = ColorPreviewBar(
-            self.palette_group,
-            "Vista rápida de base",
-            surface_options,
-            selected_label=normalize_surface_theme_label(self.preferences.surface_theme),
-            color_provider=_surface_preview_colors,
-            font_config=self.font_config,
-            on_select=self._on_surface_swatch_selected,
-            columns=8,
-            swatch_size=21,
-        )
-        self.surface_preview_bar.grid(row=3, column=1, sticky="ew", padx=(6, 12), pady=(0, 8))
 
         self.typography_group = self.ctk.CTkFrame(self.visual_scroll, corner_radius=10)
         self.typography_group.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
@@ -464,20 +322,6 @@ class SettingsWindow(SecondaryWindow):
         )
         examples.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 12))
 
-    def _on_accent_combo_changed(self, selected_label: str) -> None:
-        if hasattr(self, "accent_preview_bar"):
-            self.accent_preview_bar.select(selected_label, notify=False)
-
-    def _on_accent_swatch_selected(self, selected_label: str) -> None:
-        self.color_theme_combo.set_value(selected_label)
-
-    def _on_surface_combo_changed(self, selected_label: str) -> None:
-        if hasattr(self, "surface_preview_bar"):
-            self.surface_preview_bar.select(selected_label, notify=False)
-
-    def _on_surface_swatch_selected(self, selected_label: str) -> None:
-        self.surface_theme_combo.set_value(selected_label)
-
     def apply_visual_preferences(
         self,
         font_config: FontConfig | None = None,
@@ -522,10 +366,6 @@ class SettingsWindow(SecondaryWindow):
                     surface_theme=surface_theme,
                     appearance_mode=appearance_mode,
                 )
-
-        for preview in (getattr(self, "accent_preview_bar", None), getattr(self, "surface_preview_bar", None)):
-            if preview is not None:
-                preview.apply_visual_preferences(self.font_config, surface_theme, appearance_mode)
 
         for frame_name in ("visual_scroll", "palette_group", "typography_group"):
             frame = getattr(self, frame_name, None)

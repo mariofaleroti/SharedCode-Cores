@@ -39,7 +39,7 @@ def build_showcase(
         GuiAppConfig(
             app_name="GuiCore 1.1 Showcase",
             app_subtitle="Contrato visual integrado y neutral",
-            app_version="1.1.0.dev7",
+            app_version="1.1.0",
             layout_profile="compact",
             visual_preferences=resolved_mode,
             width=1280,

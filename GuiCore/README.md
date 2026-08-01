@@ -427,7 +427,7 @@ La demo usa `examples/demo_gui_preferences.json` para mostrar ese flujo. Una her
 ### Ajustes visuales de paleta
 
 - El color de acento y el color base se propagan a componentes registrados y a controles agregados luego de crear una sección lateral.
-- La ventana de Configuración usa barras compactas de paleta, sin dependencia obligatoria de `CTkColorPicker`, para mantener GuiCore portable.
+- La ventana de Configuración usa selectores compactos para acento y superficie, sin barras de muestras redundantes.
 
 - Barra de progreso indeterminada reutilizable para procesos cuyo total todavía no se conoce.
 

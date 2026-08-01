@@ -85,8 +85,10 @@ def resolve_portable_path(
     ``${LOGS_DIR}``, ``${TEMP_DIR}``, ``${RUNTIME_DIR}``, ``${APP_DATA}`` and
     ``${CACHE_DIR}``.
 
-    Relative paths are resolved from ``base_dir`` when provided. When ``base_dir``
-    is omitted, they are resolved from the current working directory.
+    Relative paths are composed from ``base_dir`` when provided. When
+    ``base_dir`` is omitted, they are composed from the current working
+    directory. With ``resolve=False``, neither context variables nor the final
+    path are physically resolved against the host filesystem.
     """
 
     if path is None:
@@ -105,6 +107,7 @@ def resolve_portable_path(
         env=env,
         home=home,
         extra_variables=extra_variables,
+        resolve=resolve,
     )
 
     path_text = str(path)
@@ -120,8 +123,17 @@ def resolve_portable_path(
     expanded_text = os.path.expandvars(expanded_text)
     candidate = Path(expanded_text).expanduser()
 
-    if not candidate.is_absolute():
-        root_dir = normalize_path(base_dir, resolve=True) if base_dir is not None else Path.cwd().resolve()
+    # On Windows, ``Path("/home/tester")`` has a root but no drive, so
+    # ``is_absolute()`` is False. It is still rooted and must not be rebased
+    # under ``base_dir`` during portable, non-resolving expansion.
+    is_rooted = candidate.is_absolute() or bool(candidate.root)
+
+    if not is_rooted:
+        root_dir = (
+            normalize_path(base_dir, resolve=resolve)
+            if base_dir is not None
+            else (Path.cwd().resolve() if resolve else Path.cwd())
+        )
         candidate = root_dir / candidate
 
     return candidate.resolve(strict=False) if resolve else candidate
@@ -150,8 +162,13 @@ def build_portable_path_variables(
     env: Mapping[str, str] | None = None,
     home: str | os.PathLike[str] | None = None,
     extra_variables: Mapping[str, str | os.PathLike[str]] | None = None,
+    resolve: bool = True,
 ) -> dict[str, Path]:
-    """Build the token map used by ``resolve_portable_path``."""
+    """Build the token map used by ``resolve_portable_path``.
+
+    ``resolve=False`` preserves caller-provided portable paths without attaching
+    the current host drive or consulting the filesystem.
+    """
 
     home_dir = get_home_dir(home=home)
     current_platform = platform_name or get_platform_name()
@@ -163,21 +180,21 @@ def build_portable_path_variables(
     }
 
     if base_dir is not None:
-        variables["BASE_DIR"] = normalize_path(base_dir, resolve=True)
+        variables["BASE_DIR"] = normalize_path(base_dir, resolve=resolve)
     if project_root is not None:
-        variables["PROJECT_ROOT"] = normalize_path(project_root, resolve=True)
+        variables["PROJECT_ROOT"] = normalize_path(project_root, resolve=resolve)
     elif base_dir is not None:
-        variables["PROJECT_ROOT"] = normalize_path(base_dir, resolve=True)
+        variables["PROJECT_ROOT"] = normalize_path(base_dir, resolve=resolve)
     if config_dir is not None:
-        variables["CONFIG_DIR"] = normalize_path(config_dir, resolve=True)
+        variables["CONFIG_DIR"] = normalize_path(config_dir, resolve=resolve)
     if output_dir is not None:
-        variables["OUTPUT_DIR"] = normalize_path(output_dir, resolve=True)
+        variables["OUTPUT_DIR"] = normalize_path(output_dir, resolve=resolve)
     if logs_dir is not None:
-        variables["LOGS_DIR"] = normalize_path(logs_dir, resolve=True)
+        variables["LOGS_DIR"] = normalize_path(logs_dir, resolve=resolve)
     if temp_dir is not None:
-        variables["TEMP_DIR"] = normalize_path(temp_dir, resolve=True)
+        variables["TEMP_DIR"] = normalize_path(temp_dir, resolve=resolve)
     if runtime_dir is not None:
-        variables["RUNTIME_DIR"] = normalize_path(runtime_dir, resolve=True)
+        variables["RUNTIME_DIR"] = normalize_path(runtime_dir, resolve=resolve)
 
     if tool_name:
         variables.setdefault("APP_DATA", get_app_data_dir(tool_name, platform_name=current_platform, env=env, home=home_dir))
@@ -191,7 +208,7 @@ def build_portable_path_variables(
             normalized_key = str(key).strip().upper()
             if not normalized_key:
                 continue
-            variables[normalized_key] = normalize_path(value, resolve=True)
+            variables[normalized_key] = normalize_path(value, resolve=resolve)
 
     return variables
 

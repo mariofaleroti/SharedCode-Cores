@@ -4,9 +4,9 @@ Todas las notas relevantes de GuiCore quedan registradas aquí. El objetivo es
 que cada herramienta del ecosistema pueda saber qué contrato visual está
 consumiendo.
 
-## Unreleased — objetivo v1.1.0
+## v1.1.0 - 2026-08-01
 
-Estado: **implementación iniciada en la línea 1.1.0.dev0**.
+Estado: **release estable del contrato GuiCore 1.1.0**.
 
 ### Decisiones
 
@@ -89,6 +89,8 @@ Estado: **implementación iniciada en la línea 1.1.0.dev0**.
 - Corrección dev7: el cierre de ventanas secundarias cancela callbacks `after` mediante su widget propietario.
 - Corrección dev7: se evita la doble eliminación de comandos Tcl en Python 3.13.
 - Corrección dev7: `SecondaryWindow.close()` es idempotente y administra su callback de elevación.
+- Ajuste dev7: se eliminaron las barras `Vista rápida de acento` y `Vista rápida de base` por ser redundantes.
+- Ajuste dev7: los selectores funcionales de tema, acento y superficie se conservan y la ventana avanzada se compactó.
 
 ### Documentación
 

@@ -764,8 +764,8 @@ class GuiCorePreferenceStoreTests(unittest.TestCase):
 
         self.assertEqual(loaded, GuiPreferences())
 
-    def test_public_version_matches_current_development_line(self):
-        self.assertEqual(__version__, "1.1.0.dev7")
+    def test_public_version_matches_stable_release(self):
+        self.assertEqual(__version__, "1.1.0")
         self.assertEqual(GUI_CORE_VERSION, __version__)
 
     def test_documentation_files_exist(self):

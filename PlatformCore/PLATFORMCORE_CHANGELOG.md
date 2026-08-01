@@ -1,5 +1,13 @@
 # PlatformCore Changelog
 
+## vNext - Portable path resolution semantics
+
+- `resolve=False` now applies to context variables as well as the final path.
+- Rooted paths without a Windows drive are no longer incorrectly rebased under
+  `base_dir`.
+- Added deterministic Windows/Linux simulation coverage without host filesystem
+  resolution.
+
 ## vNext - Apertura nativa de PDF en Windows
 
 - `open_path()` delega archivos PDF a Explorer en Windows para que la asociación predeterminada se resuelva de forma confiable.

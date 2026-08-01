@@ -66,14 +66,15 @@ class VisualPreferencesModesSmokeTests(unittest.TestCase):
         window.close()
         window.close()  # Closing a secondary window is idempotent.
 
-    def test_advanced_settings_show_palette_controls(self) -> None:
+    def test_advanced_settings_show_color_selectors_without_preview_swatches(self) -> None:
         window = SettingsWindow(
             self.root,
             preference_mode=VISUAL_PREFERENCES_ADVANCED,
         )
         self.assertTrue(hasattr(window, "color_theme_combo"))
         self.assertTrue(hasattr(window, "surface_theme_combo"))
-        self.assertTrue(hasattr(window, "accent_preview_bar"))
+        self.assertFalse(hasattr(window, "accent_preview_bar"))
+        self.assertFalse(hasattr(window, "surface_preview_bar"))
         window.close()
 
 
